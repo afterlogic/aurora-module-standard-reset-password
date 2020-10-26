@@ -11,11 +11,11 @@
 		"reset-password",
 		"string"
 	],
-    "CustomLogoUrl": [
+	"NotificationEmail": [
 		"",
 		"string"
 	],
-    "InfoText": [
+    "CustomLogoUrl": [
 		"",
 		"string"
 	],

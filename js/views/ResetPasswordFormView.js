@@ -14,7 +14,9 @@ var
 	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
 	App = require('%PathToCoreWebclientModule%/js/App.js'),
 	Browser = require('%PathToCoreWebclientModule%/js/Browser.js'),
+	Routing = require('%PathToCoreWebclientModule%/js/Routing.js'),
 	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
+	UserSettings = require('%PathToCoreWebclientModule%/js/Settings.js'),
 	
 	CAbstractScreenView = require('%PathToCoreWebclientModule%/js/views/CAbstractScreenView.js'),
 
@@ -35,43 +37,43 @@ function CResetPasswordFormView()
 	CAbstractScreenView.call(this, '%ModuleName%');
 	
 	this.sCustomLogoUrl = Settings.CustomLogoUrl;
-	this.sInfoText = Settings.InfoText;
 	this.sBottomInfoHtmlText = Settings.BottomInfoHtmlText;
 	
 	this.email = ko.observable('');
-	this.enableEmailEdit = ko.observable(true);
-	this.password = ko.observable('');
-	this.confirmPassword = ko.observable('');
-	
 	this.emailFocus = ko.observable(false);
-	this.passwordFocus = ko.observable(false);
+
+	this.newPassword = ko.observable('');
+	this.newPasswordFocus = ko.observable(false);
+
+	this.confirmPassword = ko.observable('');
 	this.confirmPasswordFocus = ko.observable(false);
 	
 	this.step = ko.observable(1);
+	this.headingText = ko.computed(function () {
+		if (this.step() === 0 || this.step() === 1 || this.step() === 2)
+		{
+			return TextUtils.i18n('%MODULENAME%/HEADING_RESET_PASSWORD');
+		}
+		if (this.step() === 3)
+		{
+			return TextUtils.i18n('%MODULENAME%/HEADING_CHECK_EMAIL');
+		}
+		return '';
+	}, this);
+	this.resetPasswordHashInfo = ko.observable('');
 	this.recoverThroughEmailText = ko.observable('');
 	this.sendRecoveryEmailText = ko.observable('');
 
-	this.loading = ko.observable(false);
+	this.gettingRecoveryEmail = ko.observable(false);
+	this.continueCommand = Utils.createCommand(this, this.continue, function () { return !this.gettingRecoveryEmail(); });
 
-	this.canTryResetPassword = ko.computed(function () {
-		return !this.loading();
-	}, this);
-
-	this.ResetPasswordButtonText = ko.computed(function () {
-		return this.loading() ? TextUtils.i18n('COREWEBCLIENT/ACTION_ResetPassword_IN_PROGRESS') : TextUtils.i18n('COREWEBCLIENT/ACTION_ResetPassword');
-	}, this);
-
-	this.continueCommand = Utils.createCommand(this, this.continue, this.canTryResetPassword);
-	this.resetPasswordCommand = Utils.createCommand(this, this.ResetPassword, this.canTryResetPassword);
-
-	this.shake = ko.observable(false).extend({'autoResetToFalse': 800});
+	this.sendingRecoveryEmail = ko.observable(false);
+	this.sendRecoveryEmailCommand = Utils.createCommand(this, this.sendRecoveryEmail, function () { return !this.sendingRecoveryEmail(); });
 	
-	this.welcomeText = ko.observable('');
-	App.subscribeEvent('ShowWelcomeResetPasswordText', _.bind(function (oParams) {
-		this.welcomeText(oParams.WelcomeText);
-		this.email(oParams.UserName);
-		this.enableEmailEdit(false);
-	}, this));
+	this.changingPassword = ko.observable(false);
+	this.changePasswordCommand = Utils.createCommand(this, this.changePassword, function () { return !this.changingPassword(); });
+	
+	this.shake = ko.observable(false).extend({'autoResetToFalse': 800});
 	
 	App.broadcastEvent('%ModuleName%::ConstructView::after', {'Name': this.ViewConstructorName, 'View': this});
 }
@@ -86,17 +88,44 @@ CResetPasswordFormView.prototype.onBind = function ()
 	$html.addClass('non-adjustable-valign');
 };
 
+CResetPasswordFormView.prototype.getResetPasswordHash = function () {
+	var aHashArray = Routing.getCurrentHashArray();
+	if (aHashArray.length >= 2 && aHashArray[0] === Settings.HashModuleName)
+	{
+		return aHashArray[1];
+	}
+	return '';
+},
 /**
  * Focuses email input after view showing.
  */
 CResetPasswordFormView.prototype.onShow = function ()
 {
-	_.delay(_.bind(function(){
-		if (this.email() === '')
-		{
-			this.emailFocus(true);
-		}
-	},this), 1);
+	var sResetPasswordHash = this.getResetPasswordHash();
+	console.log('sResetPasswordHash', sResetPasswordHash);
+	if (Types.isNonEmptyString(sResetPasswordHash))
+	{
+		this.step(0);
+		Ajax.send(Settings.ServerModuleName, 'GetUserPublicId', { 'Hash': sResetPasswordHash }, function (oResponse) {
+			if (oResponse.Result)
+			{
+				this.resetPasswordHashInfo(TextUtils.i18n('%MODULENAME%/INFO_WELCOME', {'USERNAME': oResponse.Result, 'SITE_NAME': UserSettings.SiteName}));
+			}
+			else
+			{
+				this.resetPasswordHashInfo(TextUtils.i18n('%MODULENAME%/ERROR_WELCOME', {'USERNAME': oResponse.Result, 'SITE_NAME': UserSettings.SiteName}));
+			}
+		}, this);
+	}
+	else
+	{
+		_.delay(_.bind(function(){
+			if (this.email() === '')
+			{
+				this.emailFocus(true);
+			}
+		},this), 1);
+	}
 };
 
 CResetPasswordFormView.prototype.continue = function ()
@@ -114,7 +143,9 @@ CResetPasswordFormView.prototype.continue = function ()
 	else
 	{
 		this.step(2);
-		Ajax.send('%ModuleName%', 'GetRecoveryEmail', { UserPublicId: this.email()}, function (oResponse, oRequest) {
+		this.gettingRecoveryEmail(true);
+		Ajax.send('%ModuleName%', 'GetRecoveryEmail', { UserPublicId: this.email() }, function (oResponse, oRequest) {
+			this.gettingRecoveryEmail(false);
 			if (Types.isNonEmptyString(oResponse && oResponse.Result))
 			{
 				this.recoverThroughEmailText(TextUtils.i18n('%MODULENAME%/ACTION_EMAIL_RECOVER', {
@@ -142,96 +173,26 @@ CResetPasswordFormView.prototype.backToStep1 = function ()
 
 CResetPasswordFormView.prototype.sendRecoveryEmail = function ()
 {
-	this.step(3);
+	this.sendingRecoveryEmail(true);
+	Ajax.send('%ModuleName%', 'SendRecoveryEmail', { UserPublicId: this.email() }, function (oResponse, oRequest) {
+		this.sendingRecoveryEmail(false);
+		if (oResponse && oResponse.Result)
+		{
+			this.step(3);
+		}
+	}, this);
 };
 
-/**
- * 
- * @param {string} sEmail
- * @param {string} sPassword
- * @param {string} sConfirmPassword
- * @returns {Boolean}
- */
-CResetPasswordFormView.prototype.validateForm = function (sEmail, sPassword, sConfirmPassword)
+CResetPasswordFormView.prototype.changePassword = function ()
 {
-	if (sEmail === '')
-	{
-		this.emailFocus(true);
-		this.shake(true);
-		return false;
-	}
-	if (sPassword === '')
-	{
-		this.passwordFocus(true);
-		this.shake(true);
-		return false;
-	}
-	if (sPassword !== '' && sPassword !== sConfirmPassword)
-	{
-		this.confirmPasswordFocus(true);
-		this.shake(true);
-		Screens.showError(TextUtils.i18n('COREWEBCLIENT/ERROR_PASSWORDS_DO_NOT_MATCH'));
-		return false;
-	}
-	return true;
-};
-
-/**
- * Checks Email input value and sends ResetPassword request to server.
- */
-CResetPasswordFormView.prototype.ResetPassword = function ()
-{
-	if (!this.loading())
-	{
-		var
-			sEmail = $.trim(this.email()),
-			sPassword = $.trim(this.password()),
-			sConfirmPassword = $.trim(this.confirmPassword()),
-			oParameters = {
-				'Email': sEmail,
-				'Password': sPassword
-			}
-		;
-		if (this.validateForm(sEmail, sPassword, sConfirmPassword))
+	this.changingPassword(true);
+	Ajax.send('%ModuleName%', 'ChangePassword', { 'Hash': this.getResetPasswordHash(), 'NewPassword': this.newPassword() }, function (oResponse, oRequest) {
+		this.changingPassword(false);
+		console.log(oResponse);
+		if (oResponse && oResponse.Result)
 		{
-			this.loading(true);
-			Ajax.send('%ModuleName%', 'ResetPassword', oParameters, this.onResetPasswordResponse, this);
 		}
-	}
-};
-
-/**
- * Receives data from the server. Shows error and shakes form if server has returned false-result.
- * Otherwise clears search-string if it don't contain "reset-pass", "invite-auth" and "oauth" parameters and reloads page.
- * 
- * @param {Object} oResponse Data obtained from the server.
- * @param {Object} oRequest Data has been transferred to the server.
- */
-CResetPasswordFormView.prototype.onResetPasswordResponse = function (oResponse, oRequest)
-{
-	if (false === oResponse.Result)
-	{
-		this.loading(false);
-		this.shake(true);
-		
-		Api.showErrorByCode(oResponse, TextUtils.i18n('COREWEBCLIENT/ERROR_REGISTRATION_FAILED'));
-	}
-	else
-	{
-		App.setAuthToken(oResponse.Result.AuthToken);
-		
-		if (window.location.search !== '' &&
-			UrlUtils.getRequestParam('reset-pass') === null &&
-			UrlUtils.getRequestParam('invite-auth') === null &&
-			UrlUtils.getRequestParam('oauth') === null)
-		{
-			UrlUtils.clearAndReloadLocation(Browser.ie8AndBelow, true);
-		}
-		else
-		{
-			UrlUtils.clearAndReloadLocation(Browser.ie8AndBelow, false);
-		}
-	}
-};
+	}, this);
+}
 
 module.exports = new CResetPasswordFormView();

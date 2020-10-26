@@ -12,7 +12,6 @@ module.exports = {
 	
 	BottomInfoHtmlText: '',
 	CustomLogoUrl: '',
-	InfoText: '',
 	RecoveryEmail: '',
 	
 	/**
@@ -31,7 +30,6 @@ module.exports = {
 			
 			this.BottomInfoHtmlText = Types.pString(oAppDataSection.BottomInfoHtmlText, this.BottomInfoHtmlText);
 			this.CustomLogoUrl = Types.pString(oAppDataSection.CustomLogoUrl, this.CustomLogoUrl);
-			this.InfoText = Types.pString(oAppDataSection.InfoText, this.InfoText);
 			this.RecoveryEmail = Types.pString(oAppDataSection.RecoveryEmail, this.RecoveryEmail);
 		}
 	},

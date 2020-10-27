@@ -5,7 +5,7 @@
  * For full statements of the licenses see LICENSE-AFTERLOGIC and LICENSE-AGPL3 files.
  */
 
-namespace Aurora\Modules\StandardResetPasswordWebclient;
+namespace Aurora\Modules\StandardResetPassword;
 
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
@@ -213,7 +213,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 		
 		$aSettings = [
-			'ServerModuleName' => $this->getConfig('ServerModuleName', 'StandardResetPasswordWebclient'),
+			'ServerModuleName' => $this->getConfig('ServerModuleName', 'StandardResetPassword'),
 			'HashModuleName' => $this->getConfig('HashModuleName', 'login'),
 			'CustomLogoUrl' => $this->getConfig('CustomLogoUrl', ''),
 			'BottomInfoHtmlText' => $this->getConfig('BottomInfoHtmlText', ''),

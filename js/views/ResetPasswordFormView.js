@@ -44,6 +44,7 @@ function CResetPasswordFormView()
 	this.confirmPasswordFocus = ko.observable(false);
 	
 	this.step = ko.observable(1);
+	this.gettingUserPublicId = ko.observable(false);
 	this.resetPasswordHashUserPublicId = ko.observable('');
 	this.resetPasswordHashInfo = ko.computed(function () {
 		if (this.resetPasswordHashUserPublicId())
@@ -53,7 +54,11 @@ function CResetPasswordFormView()
 				'SITE_NAME': UserSettings.SiteName
 			});
 		}
-		return TextUtils.i18n('%MODULENAME%/ERROR_RESET_PASSWORD_HASH');
+		if (!this.gettingUserPublicId())
+		{
+			return TextUtils.i18n('%MODULENAME%/ERROR_RESET_PASSWORD_HASH');
+		}
+		return '';
 	}, this);
 	this.recoverThroughEmailText = ko.observable('');
 	this.sendRecoveryEmailText = ko.observable('');
@@ -99,7 +104,9 @@ CResetPasswordFormView.prototype.onRoute = function ()
 	if (Types.isNonEmptyString(sResetPasswordHash))
 	{
 		this.step(0);
+		this.gettingUserPublicId(true);
 		Ajax.send('%ModuleName%', 'GetUserPublicId', { 'Hash': sResetPasswordHash }, function (oResponse) {
+			this.gettingUserPublicId(false);
 			if (Types.isNonEmptyString(oResponse.Result))
 			{
 				this.resetPasswordHashUserPublicId(oResponse.Result);

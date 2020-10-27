@@ -46,29 +46,20 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		{
 			$sMinId = $this->getMinId($iUserId, $sSalt);
 			$mHash = $oMin->GetMinByID($sMinId);
-			
-			if (!$mHash)
+
+			if ($mHash)
 			{
-				$mHash = $oMin->CreateMin(
-					$sMinId,
-					array(
-						'UserId' => $iUserId
-					)
-				);
+				$mHash = $oMin->DeleteMinByID($sMinId);
 			}
-			else
-			{
-				if (isset($mHash['__hash__']))
-				{
-					$mHash = $mHash['__hash__'];
-				}
-				else
-				{
-					$mHash = '';
-				}
-			}
+
+			$mHash = $oMin->CreateMin(
+				$sMinId,
+				array(
+					'UserId' => $iUserId
+				)
+			);
 		}
-		
+
 		return $mHash;
 	}
 
@@ -219,10 +210,24 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	{
 		$oUser = null;
 		$oMin = \Aurora\Modules\Min\Module::Decorator();
-		if ($oMin)
+		$mHash = $oMin ? $oMin->GetMinByHash($sHash) : null;
+		if (!empty($mHash) && isset($mHash['__hash__'], $mHash['UserId']))
 		{
-			$mHash = $oMin->GetMinByHash($sHash);
-			if (isset($mHash['__hash__'], $mHash['UserId']))
+			$iRecoveryLinkLifetimeMinutes = $this->getConfig('RecoveryLinkLifetimeMinutes', 0);
+			$bRecoveryLinkAlive = ($iRecoveryLinkLifetimeMinutes === 0);
+			if (!$bRecoveryLinkAlive)
+			{
+				$iDiffMinutes = (time() - $mHash['__time__']) / 60;
+				if ($iDiffMinutes < $iRecoveryLinkLifetimeMinutes)
+				{
+					$bRecoveryLinkAlive = true;
+				}
+				else
+				{
+					throw new \Exception('Recovery link is outdated');
+				}
+			}
+			if ($bRecoveryLinkAlive)
 			{
 				$iUserId = $mHash['UserId'];
 				$bPrevState = \Aurora\Api::skipCheckUserRole(true);

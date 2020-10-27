@@ -10,7 +10,7 @@ namespace Aurora\Modules\StandardResetPasswordWebclient;
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
- * @copyright Copyright (c) 2019, Afterlogic Corp.
+ * @copyright Copyright (c) 2020, Afterlogic Corp.
  *
  * @package Modules
  */
@@ -253,18 +253,21 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	
 	public function GetRecoveryEmail($UserPublicId)
 	{
-		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
-		$sRecoveryEmail = $oUser->{self::GetName().'::RecoveryEmail'};
-		$aRecoveryEmailParts = explode('@', $sRecoveryEmail);
-		$iPartsCount = count($aRecoveryEmailParts);
 		$sResult = '';
-		if ($iPartsCount > 0)
+		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
+		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
 		{
-			$sResult = substr($aRecoveryEmailParts[0], 0, 3) . '***';
-		}
-		if ($iPartsCount > 1)
-		{
-			$sResult .= '@' . $aRecoveryEmailParts[$iPartsCount - 1];
+			$sRecoveryEmail = $oUser->{self::GetName().'::RecoveryEmail'};
+			$aRecoveryEmailParts = explode('@', $sRecoveryEmail);
+			$iPartsCount = count($aRecoveryEmailParts);
+			if ($iPartsCount > 0)
+			{
+				$sResult = substr($aRecoveryEmailParts[0], 0, 3) . '***';
+			}
+			if ($iPartsCount > 1)
+			{
+				$sResult .= '@' . $aRecoveryEmailParts[$iPartsCount - 1];
+			}
 		}
 		return $sResult;
 	}
@@ -329,7 +332,22 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 
         if (!empty($oUser) && !empty($oAccount) && !empty($NewPassword))
         {
-            $mResult = $this->сhangePassword($oAccount, $NewPassword);
+			$aArgs = [
+				'Account' => $oAccount,
+				'CurrentPassword' => '',
+				'SkipCurrentPasswordCheck' => true,
+				'NewPassword' => $NewPassword
+			];
+			$aResponse = [
+				'AccountPasswordChanged' => false
+			];
+
+			\Aurora\System\Api::GetModule('Core')->broadcastEvent(
+				'StandardResetPassword::ChangeAccountPassword',
+				$aArgs,
+				$aResponse
+			);
+            $mResult = $aResponse['AccountPasswordChanged'];
             if ($mResult && !empty($oMin) && !empty($Hash))
 			{
                 $oMin->DeleteMinByHash($Hash);

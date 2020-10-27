@@ -8,21 +8,16 @@ var
 	AddressUtils = require('%PathToCoreWebclientModule%/js/utils/Address.js'),
 	TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
 	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js'),
-	UrlUtils = require('%PathToCoreWebclientModule%/js/utils/Url.js'),
 	Utils = require('%PathToCoreWebclientModule%/js/utils/Common.js'),
 	
 	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
 	App = require('%PathToCoreWebclientModule%/js/App.js'),
-	Browser = require('%PathToCoreWebclientModule%/js/Browser.js'),
 	Routing = require('%PathToCoreWebclientModule%/js/Routing.js'),
 	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
 	UserSettings = require('%PathToCoreWebclientModule%/js/Settings.js'),
 	
 	CAbstractScreenView = require('%PathToCoreWebclientModule%/js/views/CAbstractScreenView.js'),
 
-	Popups = require('%PathToCoreWebclientModule%/js/Popups.js'),
-	AlertPopup = require('%PathToCoreWebclientModule%/js/popups/AlertPopup.js'),
-	
 	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
 	Settings = require('modules/%ModuleName%/js/Settings.js'),
 	
@@ -49,18 +44,17 @@ function CResetPasswordFormView()
 	this.confirmPasswordFocus = ko.observable(false);
 	
 	this.step = ko.observable(1);
-	this.headingText = ko.computed(function () {
-		if (this.step() === 0 || this.step() === 1 || this.step() === 2)
+	this.resetPasswordHashUserPublicId = ko.observable('');
+	this.resetPasswordHashInfo = ko.computed(function () {
+		if (this.resetPasswordHashUserPublicId())
 		{
-			return TextUtils.i18n('%MODULENAME%/HEADING_RESET_PASSWORD');
+			return TextUtils.i18n('%MODULENAME%/INFO_RESET_PASSWORD_HASH', {
+				'USERNAME': this.resetPasswordHashUserPublicId(),
+				'SITE_NAME': UserSettings.SiteName
+			});
 		}
-		if (this.step() === 3)
-		{
-			return TextUtils.i18n('%MODULENAME%/HEADING_CHECK_EMAIL');
-		}
-		return '';
+		return TextUtils.i18n('%MODULENAME%/ERROR_RESET_PASSWORD_HASH');
 	}, this);
-	this.resetPasswordHashInfo = ko.observable('');
 	this.recoverThroughEmailText = ko.observable('');
 	this.sendRecoveryEmailText = ko.observable('');
 
@@ -72,6 +66,7 @@ function CResetPasswordFormView()
 	
 	this.changingPassword = ko.observable(false);
 	this.changePasswordCommand = Utils.createCommand(this, this.changePassword, function () { return !this.changingPassword(); });
+	this.passwordChanged = ko.observable(false);
 	
 	this.shake = ko.observable(false).extend({'autoResetToFalse': 800});
 	
@@ -96,29 +91,24 @@ CResetPasswordFormView.prototype.getResetPasswordHash = function () {
 	}
 	return '';
 },
-/**
- * Focuses email input after view showing.
- */
-CResetPasswordFormView.prototype.onShow = function ()
+
+CResetPasswordFormView.prototype.onRoute = function ()
 {
 	var sResetPasswordHash = this.getResetPasswordHash();
-	console.log('sResetPasswordHash', sResetPasswordHash);
+	this.resetPasswordHashUserPublicId('');
 	if (Types.isNonEmptyString(sResetPasswordHash))
 	{
 		this.step(0);
 		Ajax.send(Settings.ServerModuleName, 'GetUserPublicId', { 'Hash': sResetPasswordHash }, function (oResponse) {
-			if (oResponse.Result)
+			if (Types.isNonEmptyString(oResponse.Result))
 			{
-				this.resetPasswordHashInfo(TextUtils.i18n('%MODULENAME%/INFO_WELCOME', {'USERNAME': oResponse.Result, 'SITE_NAME': UserSettings.SiteName}));
-			}
-			else
-			{
-				this.resetPasswordHashInfo(TextUtils.i18n('%MODULENAME%/ERROR_WELCOME', {'USERNAME': oResponse.Result, 'SITE_NAME': UserSettings.SiteName}));
+				this.resetPasswordHashUserPublicId(oResponse.Result);
 			}
 		}, this);
 	}
 	else
 	{
+		this.step(1);
 		_.delay(_.bind(function(){
 			if (this.email() === '')
 			{
@@ -138,26 +128,30 @@ CResetPasswordFormView.prototype.continue = function ()
 	}
 	else if (!AddressUtils.isCorrectEmail(sEmail))
 	{
-		Popups.showPopup(AlertPopup, [TextUtils.i18n('%MODULENAME%/ERROR_INCORRECT_EMAIL')]);
+		Screens.showError(TextUtils.i18n('%MODULENAME%/ERROR_INCORRECT_EMAIL'));
 	}
 	else
 	{
-		this.step(2);
 		this.gettingRecoveryEmail(true);
 		Ajax.send('%ModuleName%', 'GetRecoveryEmail', { UserPublicId: this.email() }, function (oResponse, oRequest) {
 			this.gettingRecoveryEmail(false);
 			if (Types.isNonEmptyString(oResponse && oResponse.Result))
 			{
+				this.step(2);
 				this.recoverThroughEmailText(TextUtils.i18n('%MODULENAME%/ACTION_EMAIL_RECOVER', {
-					'EMAIL': oResponse && oResponse.Result
+					'USERNAME': this.email(),
+					'EMAIL': oResponse && oResponse.Result,
+					'SITE_NAME': UserSettings.SiteName
 				}));
-				this.sendRecoveryEmailText(TextUtils.i18n('%MODULENAME%/INFO_CHECK_EMAIL', {
-					'EMAIL': oResponse && oResponse.Result
+				this.sendRecoveryEmailText(TextUtils.i18n('%MODULENAME%/INFO_RECOVERY_LINK_SENT', {
+					'USERNAME': this.email(),
+					'EMAIL': oResponse && oResponse.Result,
+					'SITE_NAME': UserSettings.SiteName
 				}));
 			}
 			else
 			{
-				Popups.showPopup(AlertPopup, [TextUtils.i18n('%MODULENAME%/ERROR_RECOVERY_EMAIL_NOT_FOUND')]);
+				Api.showErrorByCode(oResponse, TextUtils.i18n('%MODULENAME%/ERROR_RECOVERY_EMAIL_NOT_FOUND'));
 			}
 		}, this);
 	}
@@ -180,19 +174,45 @@ CResetPasswordFormView.prototype.sendRecoveryEmail = function ()
 		{
 			this.step(3);
 		}
+		else
+		{
+			Api.showErrorByCode(oResponse, TextUtils.i18n('%MODULENAME%/ERROR_RECOVERY_EMAIL_NOT_FOUND'));
+		}
 	}, this);
 };
 
 CResetPasswordFormView.prototype.changePassword = function ()
 {
-	this.changingPassword(true);
-	Ajax.send('%ModuleName%', 'ChangePassword', { 'Hash': this.getResetPasswordHash(), 'NewPassword': this.newPassword() }, function (oResponse, oRequest) {
-		this.changingPassword(false);
-		console.log(oResponse);
-		if (oResponse && oResponse.Result)
-		{
-		}
-	}, this);
-}
+	if ($.trim(this.newPassword()) === '')
+	{
+		this.newPasswordFocus(true);
+		this.shake(true);
+	}
+	else if ($.trim(this.confirmPassword()) === '')
+	{
+		this.confirmPasswordFocus(true);
+		this.shake(true);
+	}
+	else if (this.newPassword() !== this.confirmPassword())
+	{
+		Screens.showError(TextUtils.i18n('COREWEBCLIENT/ERROR_PASSWORDS_DO_NOT_MATCH'));
+	}
+	else
+	{
+		this.changingPassword(true);
+		this.passwordChanged(false);
+		Ajax.send('%ModuleName%', 'ChangePassword', { 'Hash': this.getResetPasswordHash(), 'NewPassword': this.newPassword() }, function (oResponse, oRequest) {
+			this.changingPassword(false);
+			if (oResponse && oResponse.Result === true)
+			{
+				this.passwordChanged(true);
+			}
+			else
+			{
+				Api.showErrorByCode(oResponse, TextUtils.i18n('%MODULENAME%/ERROR_PASSWORD_CHANGE'));
+			}
+		}, this);
+	}
+};
 
 module.exports = new CResetPasswordFormView();

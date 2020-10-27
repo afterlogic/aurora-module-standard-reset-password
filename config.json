@@ -3,18 +3,38 @@
 		false,
 		"bool"
 	],
-    "ServerModuleName": [
-		"StandardResetPassword",
-		"string"
-	],
     "HashModuleName": [
 		"reset-password",
 		"string"
 	],
-	"NotificationEmail": [
-		"",
-		"string"
-	],
+    "NotificationType": [
+        "mail",
+        "string"
+    ],
+    "NotificationEmail": [
+        "",
+        "string"
+    ],
+    "NotificationHost": [
+        "",
+        "string"
+    ],
+    "NotificationPort": [
+        25,
+        "int"
+    ],
+    "NotificationUseAuth": [
+        false,
+        "bool"
+    ],
+    "NotificationLogin": [
+        "",
+        "string"
+    ],
+    "NotificationPassword": [
+        "",
+        "string"
+    ],
     "CustomLogoUrl": [
 		"",
 		"string"

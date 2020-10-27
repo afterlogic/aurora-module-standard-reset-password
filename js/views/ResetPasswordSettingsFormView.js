@@ -17,7 +17,7 @@ var
  */
 function CResetPasswordSettingsFormView()
 {
-	CAbstractSettingsFormView.call(this, Settings.ServerModuleName);
+	CAbstractSettingsFormView.call(this, '%ModuleName%');
 	
 	this.recoveryEmail = ko.observable(Settings.RecoveryEmail);
 }

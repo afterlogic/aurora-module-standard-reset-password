@@ -72,109 +72,141 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		return $mHash;
 	}
 
-	protected function getAccountByEmail($Email)
+	/**
+	 * Creates reset password notification body.
+	 * @param string $sHash
+	 * @param string $sSiteName
+	 * @return string
+	 */
+	protected function getResetPasswordNotificationBody($sHash, $sSiteName)
+    {
+        $sBody = \file_get_contents($this->GetPath().'/templates/mail/ResetPassword.html');
+
+        if (\is_string($sBody))
+        {
+            $sBody = \strtr($sBody, array(
+                '{{RESET_PASSWORD_URL}}' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '/index.php#reset-password/' . $sHash,
+                '{{SITE_NAME}}' => $sSiteName
+            ));
+        }
+
+		return $sBody;
+	}
+
+	protected function getSmtpConfig()
+    {
+		return [
+			'Host' => $this->getConfig('NotificationHost', ''),
+			'Port' => $this->getConfig('NotificationPort', 25),
+			'SMTPAuth' => (bool) $this->getConfig('NotificationUseAuth', false),
+			'Username' => $this->getConfig('NotificationLogin', ''),
+			'Password' => $this->getConfig('NotificationPassword', ''),
+		];
+	}
+	
+	protected function getAccountByEmail($sEmail)
     {
 		$oAccount = null;
-		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($Email);
+		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($sEmail);
 		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
 		{
 			$bPrevState = \Aurora\Api::skipCheckUserRole(true);
-			$oAccount = \Aurora\Modules\Mail\Module::Decorator()->GetAccountByEmail($Email, $oUser->EntityId);
+			$oAccount = \Aurora\Modules\Mail\Module::Decorator()->GetAccountByEmail($sEmail, $oUser->EntityId);
 			\Aurora\Api::skipCheckUserRole($bPrevState);
 		}
 		return $oAccount;
 	}
 
+	protected function getAccountConfig($sEmail)
+    {
+		$oSendAccount = $this->getAccountByEmail($sEmail);
+		$oSendServer = $oSendAccount->getServer();
+		$aConfig = [
+			'Host' => $oSendServer->OutgoingServer,
+			'Port' => $oSendServer->OutgoingPort,
+			'SMTPAuth' => false,
+			'Username' => '',
+			'Password' => '',
+		];
+		switch ($oSendServer->SmtpAuthType)
+		{
+			case \Aurora\Modules\Mail\Enums\SmtpAuthType::NoAuthentication:
+				break;
+			case \Aurora\Modules\Mail\Enums\SmtpAuthType::UseSpecifiedCredentials:
+				$aConfig['SMTPAuth'] = true;
+				$aConfig['Username'] = $oSendServer->SmtpLogin;
+				$aConfig['Password'] = $oSendServer->SmtpPassword;
+				break;
+			case \Aurora\Modules\Mail\Enums\SmtpAuthType::UseUserCredentials:
+				$aConfig['SMTPAuth'] = true;
+				$aConfig['Username'] = $oSendAccount->IncomingLogin;
+				$aConfig['Password'] = $oSendAccount->getPassword();
+				break;
+		}
+		return $aConfig;
+	}
+	
+	/**
+	 * Sends notification email with recovery link.
+	 * @param string $Email
+	 * @param string $Hash
+	 * @return bool
+	 * @throws \Exception
+	 */
 	protected function sendResetPasswordNotification($Email, $Hash)
     {
-		$oModuleManager = \Aurora\System\Api::GetModuleManager();
-		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
-
-        $sBody = \file_get_contents($this->GetPath().'/templates/mail/ResetPassword.html');
         $oMail = new \PHPMailer();
 
-        if (\is_string($sBody))
-        {
-            $sBody = \strtr($sBody, array(
-                '{{RESET_PASSWORD_URL}}' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '/index.php#reset-password/' . $Hash,
-                '{{SITE_NAME}}' => $sSiteName
-            ));
-
-            $sBody = preg_replace_callback(
-                "/[\w\-]*\.png/Uim",
-                function ($matches) use ($oMail) {
-                    $sResult = $matches[0];
-
-                    if (\file_exists($this->GetPath().'/templates/'.$matches[0]))
-                    {
-                        $sContentId = \preg_replace("/\.\w*/", "", $matches[0]);
-
-                        $oMail->AddEmbeddedImage($this->GetPath().'/templates/'.$matches[0], $sContentId);
-                        $sResult = "cid:".$sContentId;
-                    }
-
-                    return $sResult;
-                },
-                $sBody
-            );
-        }
-
-        $sSubject = 'Reset your password';
         $sFrom = $this->getConfig('NotificationEmail', '');
-		$oSendAccount = $this->getAccountByEmail($sFrom);
+        $sType = \strtolower($this->getConfig('NotificationType', 'mail'));
+		switch ($sType)
+		{
+			case 'mail':
+				$oMail->isMail();
+				break;
+			case 'smtp':
+			case 'account':
+				$oMail->isSMTP();
+				$aConfig = $sType === 'smtp' ? $this->getSmtpConfig() : $this->getAccountConfig($sFrom);
+				$oMail->Host = $aConfig['Host'];
+				$oMail->Port = $aConfig['Port'];
+				$oMail->SMTPAuth = $aConfig['SMTPAuth'];
+				$oMail->Username = $aConfig['Username'];
+				$oMail->Password = $aConfig['Password'];
+				$oMail->SMTPOptions = array(
+					'ssl' => array(
+						'verify_peer' => false,
+						'verify_peer_name' => false,
+						'allow_self_signed' => true
+					)
+				);
+				break;
+		}
 
-//        $sType ='smtp';// $this->getConfig('NotificationType', 'mail');
-//        if (\strtolower($sType) === 'mail')
-//        {
-//            $oMail->isMail();
-//        }
-//        else if (\strtolower($sType) === 'smtp')
-//        {
-	        $oSendServer = $oSendAccount->getServer();
-			$oMail->isSMTP();
-            $oMail->Host = $oSendServer->OutgoingServer;//$this->getConfig('NotificationHost', '');
-            $oMail->Port = $oSendServer->OutgoingPort;
-			switch ($oSendServer->SmtpAuthType)
-			{
-				case \Aurora\Modules\Mail\Enums\SmtpAuthType::NoAuthentication:
-					$oMail->SMTPAuth = false; //(bool) $this->getConfig('NotificationUseAuth', false);
-					break;
-				case \Aurora\Modules\Mail\Enums\SmtpAuthType::UseSpecifiedCredentials:
-					$oMail->SMTPAuth = true; //(bool) $this->getConfig('NotificationUseAuth', false);
-					$oMail->Username = $oSendServer->SmtpLogin;// $this->getConfig('NotificationLogin', '');
-					$oMail->Password = $oSendServer->SmtpPassword;// $this->getConfig('NotificationPassword', '');
-					break;
-				case \Aurora\Modules\Mail\Enums\SmtpAuthType::UseUserCredentials:
-					$oMail->SMTPAuth = true; //(bool) $this->getConfig('NotificationUseAuth', false);
-					$oMail->Username = $oSendAccount->IncomingLogin;// $this->getConfig('NotificationLogin', '');
-					$oMail->Password = $oSendAccount->getPassword();// $this->getConfig('NotificationPassword', '');
-					break;
-			}
-            $oMail->SMTPOptions = array(
-                'ssl' => array(
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
-                )
-            );
-//        }
-
+		$oModuleManager = \Aurora\System\Api::GetModuleManager();
+		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
         $oMail->setFrom($sFrom);
         $oMail->addAddress($Email);
         $oMail->addReplyTo($sFrom, $sSiteName);
 
-        $oMail->Subject = $sSubject;
-        $oMail->Body = $sBody;
+        $oMail->Subject = 'Reset your password';
+        $oMail->Body = $this->getResetPasswordNotificationBody($Hash, $sSiteName);
         $oMail->isHTML(true); // Set email format to HTML
 
-        try {
-            $mResult = $oMail->send();
-//			var_dump($mResult);
-        } catch (\Exception $oEx){
-            throw new \Exception('Failed to send notification. Reason: ' . $oEx->getMessage());
+		$bResult = false;
+        try
+		{
+            $bResult = $oMail->send();
         }
-
-        return $mResult;
+		catch (\Exception $oEx)
+		{
+			\Aurora\System\Api::LogException($oEx);
+        }
+		if (!$bResult && !empty($oMail->ErrorInfo))
+		{
+			\Aurora\System\Api::Log("Message could not be sent. Mailer Error: {$oMail->ErrorInfo}");
+		}
+		return $bResult;
 	}
 
 	/**
@@ -213,7 +245,6 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 		
 		$aSettings = [
-			'ServerModuleName' => $this->getConfig('ServerModuleName', 'StandardResetPassword'),
 			'HashModuleName' => $this->getConfig('HashModuleName', 'login'),
 			'CustomLogoUrl' => $this->getConfig('CustomLogoUrl', ''),
 			'BottomInfoHtmlText' => $this->getConfig('BottomInfoHtmlText', ''),
@@ -258,20 +289,29 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
 		{
 			$sRecoveryEmail = $oUser->{self::GetName().'::RecoveryEmail'};
-			$aRecoveryEmailParts = explode('@', $sRecoveryEmail);
-			$iPartsCount = count($aRecoveryEmailParts);
-			if ($iPartsCount > 0)
+			if (!empty($sRecoveryEmail))
 			{
-				$sResult = substr($aRecoveryEmailParts[0], 0, 3) . '***';
-			}
-			if ($iPartsCount > 1)
-			{
-				$sResult .= '@' . $aRecoveryEmailParts[$iPartsCount - 1];
+				$aRecoveryEmailParts = explode('@', $sRecoveryEmail);
+				$iPartsCount = count($aRecoveryEmailParts);
+				if ($iPartsCount > 0)
+				{
+					$sResult = substr($aRecoveryEmailParts[0], 0, 3) . '***';
+				}
+				if ($iPartsCount > 1)
+				{
+					$sResult .= '@' . $aRecoveryEmailParts[$iPartsCount - 1];
+				}
 			}
 		}
 		return $sResult;
 	}
 	
+	/**
+	 * Creates a recovery link and sends it to recovery email of the user with specified public ID.
+	 * @param string $UserPublicId
+	 * @return boolean
+	 * @throws \Exception
+	 */
 	public function SendRecoveryEmail($UserPublicId)
 	{
 		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
@@ -302,7 +342,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	public function GetUserPublicId($Hash)
 	{
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
-
+		
 		$oUser = $this->getUserByHash($Hash);
 
 		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)

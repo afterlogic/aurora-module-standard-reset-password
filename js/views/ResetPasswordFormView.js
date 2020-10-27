@@ -99,7 +99,7 @@ CResetPasswordFormView.prototype.onRoute = function ()
 	if (Types.isNonEmptyString(sResetPasswordHash))
 	{
 		this.step(0);
-		Ajax.send(Settings.ServerModuleName, 'GetUserPublicId', { 'Hash': sResetPasswordHash }, function (oResponse) {
+		Ajax.send('%ModuleName%', 'GetUserPublicId', { 'Hash': sResetPasswordHash }, function (oResponse) {
 			if (Types.isNonEmptyString(oResponse.Result))
 			{
 				this.resetPasswordHashUserPublicId(oResponse.Result);
@@ -176,7 +176,7 @@ CResetPasswordFormView.prototype.sendRecoveryEmail = function ()
 		}
 		else
 		{
-			Api.showErrorByCode(oResponse, TextUtils.i18n('%MODULENAME%/ERROR_RECOVERY_EMAIL_NOT_FOUND'));
+			Api.showErrorByCode(oResponse, TextUtils.i18n('%MODULENAME%/ERROR_RECOVERY_EMAIL_NOT_SENT'));
 		}
 	}, this);
 };

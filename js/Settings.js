@@ -7,7 +7,6 @@ var
 ;
 
 module.exports = {
-	ServerModuleName: '%ModuleName%',
 	HashModuleName: 'reset-password',
 	
 	BottomInfoHtmlText: '',
@@ -25,7 +24,6 @@ module.exports = {
 		
 		if (!_.isEmpty(oAppDataSection))
 		{
-			this.ServerModuleName = Types.pString(oAppDataSection.ServerModuleName, this.ServerModuleName);
 			this.HashModuleName = Types.pString(oAppDataSection.HashModuleName, this.HashModuleName);
 			
 			this.BottomInfoHtmlText = Types.pString(oAppDataSection.BottomInfoHtmlText, this.BottomInfoHtmlText);

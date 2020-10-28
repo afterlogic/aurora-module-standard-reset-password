@@ -28,7 +28,6 @@ function CSetRecoveryEmailPopup()
 	this.password = ko.observable('');
 	this.passwordFocus = ko.observable(false);
 	this.updateMode = ko.observable(false);
-	this.removeMode = ko.observable(false);
 	this.loading = ko.observable(false);
 }
 
@@ -36,19 +35,11 @@ _.extendOwn(CSetRecoveryEmailPopup.prototype, CAbstractPopup.prototype);
 
 CSetRecoveryEmailPopup.prototype.PopupTemplate = '%ModuleName%_SetRecoveryEmailPopup';
 
-CSetRecoveryEmailPopup.prototype.onOpen = function (bRemoveMode, fCallback)
+CSetRecoveryEmailPopup.prototype.onOpen = function (fCallback)
 {
 	this.updateMode(Types.isNonEmptyString(Settings.RecoveryEmail));
-	this.removeMode(bRemoveMode);
 	this.fCallback = fCallback;
-	if (this.removeMode())
-	{
-		this.passwordFocus(true);
-	}
-	else
-	{
-		this.recoveryEmailFocus(true);
-	}
+	this.recoveryEmailFocus(true);
 };
 
 CSetRecoveryEmailPopup.prototype.onClose = function ()
@@ -60,13 +51,7 @@ CSetRecoveryEmailPopup.prototype.onClose = function ()
 CSetRecoveryEmailPopup.prototype.save = function ()
 {
 	var sEmail = $.trim(this.recoveryEmail());
-	if (!this.removeMode() && sEmail === '')
-	{
-		Screens.showError(TextUtils.i18n('%MODULENAME%/ERROR_EMPTY_RECOVERY_EMAIL'));
-		this.recoveryEmailFocus(true);
-		return;
-	}
-	if (!AddressUtils.isCorrectEmail(sEmail))
+	if (sEmail !== '' && !AddressUtils.isCorrectEmail(sEmail))
 	{
 		Screens.showError(TextUtils.i18n('%MODULENAME%/ERROR_INCORRECT_EMAIL'));
 		this.recoveryEmailFocus(true);

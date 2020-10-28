@@ -80,7 +80,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         if (\is_string($sBody))
         {
             $sBody = \strtr($sBody, array(
-                '{{RESET_PASSWORD_URL}}' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '/index.php#reset-password/' . $sHash,
+                '{{RESET_PASSWORD_URL}}' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '/#reset-password/' . $sHash,
                 '{{SITE_NAME}}' => $sSiteName
             ));
         }

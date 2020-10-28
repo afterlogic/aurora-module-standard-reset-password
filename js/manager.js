@@ -3,6 +3,8 @@
 
 module.exports = function (oAppData) {
 	var
+		_ = require('underscore'),
+
 		TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
 
 		App = require('%PathToCoreWebclientModule%/js/App.js'),
@@ -34,6 +36,16 @@ module.exports = function (oAppData) {
 		else
 		{
 			return {
+				start: function (ModulesManager)
+				{
+					App.subscribeEvent('AnonymousUserForm::PopulateBeforeButtonsControllers', _.bind(function (oParams) {
+						console.log('oParams', oParams);
+						if (_.isFunction(oParams.RegisterBeforeButtonsController) && (oParams.ModuleName === 'StandardLoginFormWebclient' || oParams.ModuleName === 'MailLoginFormWebclient'))
+						{
+							oParams.RegisterBeforeButtonsController(require('modules/%ModuleName%/js/views/ForgotPasswordController.js'));
+						}
+					}, this));
+				},
 				getScreens: function () {
 					var oScreens = {};
 					oScreens[Settings.HashModuleName] = function () {

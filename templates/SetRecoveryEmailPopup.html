@@ -2,19 +2,22 @@
 	<div class="mask" data-bind="click: cancelPopup"></div>
 	<div class="popup_panel">
 		<span class="close" data-bind="click: cancelPopup"></span>
-		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_SET_RECOVERY_EMAIL'}, visible: !removeMode() && !updateMode()"></span>
-		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_UPDATE_RECOVERY_EMAIL'}, visible: !removeMode() && updateMode()"></span>
-		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_REMOVE_RECOVERY_EMAIL'}, visible: removeMode"></span>
+		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_SET_RECOVERY_EMAIL'}, visible: !updateMode()"></span>
+		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_UPDATE_RECOVERY_EMAIL'}, visible: updateMode()"></span>
 		<div class="fields">
 			<div class="fieldset">
-				<div class="row" data-bind="visible: !removeMode()">
-					<span class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_RECOVERY_EMAIL'}"></span>
-					<input class="value input" spellcheck="false" type="text" maxlength="255" style="width: 200px;"
+				<div class="row">
+					<span class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_RECOVERY_EMAIL'}, visible: !updateMode()"></span>
+					<span class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_NEW_RECOVERY_EMAIL'}, visible: updateMode()"></span>
+					<input class="value input" spellcheck="false" type="text" maxlength="255"
 						   data-bind="value: recoveryEmail, valueUpdate: 'afterkeydown', onEnter: save, hasfocus: recoveryEmailFocus"/>
+				</div>
+				<div class="row" style="margin: 30px 0 0;">
+					<h3 data-bind="i18n: {'key': '%MODULENAME%/INFO_YOUR_ACCOUNT_PASSWORD'}"></h3>
 				</div>
 				<div class="row">
 					<span class="label" data-bind="i18n: {'key': 'COREWEBCLIENT/LABEL_PASSWORD'}"></span>
-					<input class="value input" spellcheck="false" type="password" maxlength="255" style="width: 200px;"
+					<input class="value input" spellcheck="false" type="password" maxlength="255"
 						   data-bind="value: password, valueUpdate: 'afterkeydown', onEnter: save, hasfocus: passwordFocus"/>
 				</div>
 			</div>

@@ -145,7 +145,7 @@ CResetPasswordFormView.prototype.continue = function ()
 			if (Types.isNonEmptyString(oResponse && oResponse.Result))
 			{
 				this.step(2);
-				this.recoverThroughEmailText(TextUtils.i18n('%MODULENAME%/ACTION_EMAIL_RECOVER', {
+				this.recoverThroughEmailText(TextUtils.i18n('%MODULENAME%/INFO_EMAIL_RECOVER_SENT', {
 					'USERNAME': this.email(),
 					'EMAIL': oResponse && oResponse.Result,
 					'SITE_NAME': UserSettings.SiteName

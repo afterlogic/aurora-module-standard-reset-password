@@ -41,7 +41,7 @@ CResetPasswordSettingsFormView.prototype.ViewTemplate = '%ModuleName%_ResetPassw
 
 CResetPasswordSettingsFormView.prototype.setRecoveryEmail = function ()
 {
-	Popups.showPopup(SetRecoveryEmailPopup, [false, function (sRecoveryEmail) {
+	Popups.showPopup(SetRecoveryEmailPopup, [function (sRecoveryEmail) {
 		Settings.update(sRecoveryEmail);
 		this.recoveryEmail(sRecoveryEmail);
 	}.bind(this)]);
@@ -49,15 +49,7 @@ CResetPasswordSettingsFormView.prototype.setRecoveryEmail = function ()
 
 CResetPasswordSettingsFormView.prototype.changeRecoveryEmail = function ()
 {
-	Popups.showPopup(SetRecoveryEmailPopup, [false, function (sRecoveryEmail) {
-		Settings.update(sRecoveryEmail);
-		this.recoveryEmail(sRecoveryEmail);
-	}.bind(this)]);
-};
-
-CResetPasswordSettingsFormView.prototype.removeRecoveryEmail = function ()
-{
-	Popups.showPopup(SetRecoveryEmailPopup, [true, function (sRecoveryEmail) {
+	Popups.showPopup(SetRecoveryEmailPopup, [function (sRecoveryEmail) {
 		Settings.update(sRecoveryEmail);
 		this.recoveryEmail(sRecoveryEmail);
 	}.bind(this)]);

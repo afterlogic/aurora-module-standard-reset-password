@@ -1,0 +1,29 @@
+<div class="popup add_account" style="display: none;">
+	<div class="mask" data-bind="click: cancelPopup"></div>
+	<div class="popup_panel">
+		<span class="close" data-bind="click: cancelPopup"></span>
+		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_SET_RECOVERY_EMAIL'}, visible: !removeMode() && !updateMode()"></span>
+		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_UPDATE_RECOVERY_EMAIL'}, visible: !removeMode() && updateMode()"></span>
+		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_REMOVE_RECOVERY_EMAIL'}, visible: removeMode"></span>
+		<div class="fields">
+			<div class="fieldset">
+				<div class="row" data-bind="visible: !removeMode()">
+					<span class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_RECOVERY_EMAIL'}"></span>
+					<input class="value input" spellcheck="false" type="text" maxlength="255" style="width: 200px;"
+						   data-bind="value: recoveryEmail, valueUpdate: 'afterkeydown', onEnter: save, hasfocus: recoveryEmailFocus"/>
+				</div>
+				<div class="row">
+					<span class="label" data-bind="i18n: {'key': 'COREWEBCLIENT/LABEL_PASSWORD'}"></span>
+					<input class="value input" spellcheck="false" type="password" maxlength="255" style="width: 200px;"
+						   data-bind="value: password, valueUpdate: 'afterkeydown', onEnter: save, hasfocus: passwordFocus"/>
+				</div>
+			</div>
+			<div class="buttons">
+				<span class="button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'}, click: save, visible: !loading()"></span>
+				<span class="button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE_IN_PROGRESS'}, visible: loading()"></span>
+				<span class="button secondary_button" data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_CANCEL'}, click: cancelPopup"></span>
+			</div>
+		</div>
+	</div>
+	<span class="helper"></span>
+</div>

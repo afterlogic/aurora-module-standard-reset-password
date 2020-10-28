@@ -31,6 +31,10 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 				'PasswordResetHash' => array('string', ''),
 			)
 		);
+		
+		$this->aErrors = [
+			Enums\ErrorCodes::WrongPassword => $this->i18N('ERROR_WRONG_PASSWORD'),
+		];
 	}
 
 	protected function getMinId($iUserId, $sSalt = '')
@@ -237,60 +241,11 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		}
 		return $oUser;
 	}
-	/***** private functions *****/
-
-	/***** public functions might be called with web API *****/
-	/**
-	 * Obtains list of module settings for authenticated user.
-	 * 
-	 * @return array
-	 */
-	public function GetSettings()
-	{
-		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
-		
-		$aSettings = [
-			'HashModuleName' => $this->getConfig('HashModuleName', 'login'),
-			'CustomLogoUrl' => $this->getConfig('CustomLogoUrl', ''),
-			'BottomInfoHtmlText' => $this->getConfig('BottomInfoHtmlText', ''),
-		];
-		
-		$oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
-		if ($oAuthenticatedUser instanceof \Aurora\Modules\Core\Classes\User && $oAuthenticatedUser->isNormalOrTenant())
-		{
-			$aSettings['RecoveryEmail'] = $oAuthenticatedUser->{self::GetName() . '::RecoveryEmail'};
-		}
-		
-		return $aSettings;
-	}
 	
-	/**
-	 * Updates per user settings.
-	 * @param string $RecoveryEmail
-	 * @return boolean
-	 */
-	public function UpdateSettings($RecoveryEmail = null)
-	{
-		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::NormalUser);
-
-		$oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
-		if ($oAuthenticatedUser instanceof \Aurora\Modules\Core\Classes\User && $oAuthenticatedUser->isNormalOrTenant())
-		{
-			if ($RecoveryEmail !== null)
-			{
-				$oAuthenticatedUser->{self::GetName().'::RecoveryEmail'} = $RecoveryEmail;
-			}
-			$oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
-			return $oCoreDecorator->UpdateUserObject($oAuthenticatedUser);
-		}
-
-		return false;
-	}
-	
-	public function GetRecoveryEmail($UserPublicId)
+	protected function getCoveredRecoveryEmail($oUser)
 	{
 		$sResult = '';
-		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
+
 		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
 		{
 			$sRecoveryEmail = $oUser->{self::GetName().'::RecoveryEmail'};
@@ -308,7 +263,77 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 				}
 			}
 		}
+
 		return $sResult;
+	}
+	/***** private functions *****/
+
+	/***** public functions might be called with web API *****/
+	/**
+	 * Obtains list of module settings for authenticated user.
+	 * 
+	 * @return array
+	 */
+	public function GetSettings()
+	{
+		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
+		
+		$oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
+		$aSettings = [
+			'HashModuleName' => $this->getConfig('HashModuleName', 'login'),
+			'CustomLogoUrl' => $this->getConfig('CustomLogoUrl', ''),
+			'BottomInfoHtmlText' => $this->getConfig('BottomInfoHtmlText', ''),
+			'RecoveryEmail' => $this->getCoveredRecoveryEmail($oAuthenticatedUser),
+		];
+		
+		return $aSettings;
+	}
+	
+	/**
+	 * Updates per user settings.
+	 * @param string $RecoveryEmail
+	 * @param string $Password
+	 * @return boolean|string
+	 * @throws \Aurora\System\Exceptions\ApiException
+	 * @throws \Aurora\Modules\StandardResetPassword\Exceptions\Exception
+	 */
+	public function UpdateSettings($RecoveryEmail = null, $Password = null)
+	{
+		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::NormalUser);
+		
+		if ($RecoveryEmail === null || $Password === null)
+		{
+			throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::InvalidInputParameter);
+		}
+
+		$oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
+		if ($oAuthenticatedUser instanceof \Aurora\Modules\Core\Classes\User && $oAuthenticatedUser->isNormalOrTenant())
+		{
+			$oAccount = \Aurora\Modules\Mail\Module::Decorator()->GetAccountByEmail($oAuthenticatedUser->PublicId, $oAuthenticatedUser->EntityId);
+			$sAccountPassword = $oAccount ? $oAccount->getPassword() : null;
+			if ($Password === null || $sAccountPassword !== $Password)
+			{
+				throw new \Aurora\Modules\StandardResetPassword\Exceptions\Exception(Enums\ErrorCodes::WrongPassword);
+			}
+			$oAuthenticatedUser->{self::GetName().'::RecoveryEmail'} = $RecoveryEmail;
+			$oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
+			if ($oCoreDecorator->UpdateUserObject($oAuthenticatedUser))
+			{
+				return $this->getCoveredRecoveryEmail($oAuthenticatedUser);
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::AccessDenied);
+	}
+	
+	public function GetRecoveryEmail($UserPublicId)
+	{
+		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
+		return $this->getCoveredRecoveryEmail($oUser);
 	}
 	
 	/**

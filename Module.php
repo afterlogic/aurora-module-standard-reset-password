@@ -323,8 +323,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 				{
 					$iExpiresSeconds += 5 * 60;
 				}
-				$iDiffMinutes = (time() - $iExpiresSeconds) / 60;
-				if ($iDiffMinutes < $iRecoveryLinkLifetimeMinutes)
+				if ($iExpiresSeconds > time())
 				{
 					$bRecoveryLinkAlive = true;
 				}

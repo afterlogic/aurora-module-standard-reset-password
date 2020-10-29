@@ -538,6 +538,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             if ($mResult && !empty($oMin) && !empty($Hash))
 			{
                 $oMin->DeleteMinByHash($Hash);
+				\Aurora\System\Api::UserSession()->DeleteAllUserSessions($oUser->EntityId);
             }
         }
         else

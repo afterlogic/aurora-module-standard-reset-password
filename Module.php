@@ -103,11 +103,14 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 				$mHash = $oMin->DeleteMinByID($sMinId);
 			}
 
+			$iRecoveryLinkLifetimeMinutes = $this->getConfig('RecoveryLinkLifetimeMinutes', 0);
+			$iExpiresSeconds = time() + $iRecoveryLinkLifetimeMinutes * 60;
 			$mHash = $oMin->CreateMin(
 				$sMinId,
 				array(
 					'UserId' => $iUserId,
 					'Type' => $sType,
+					'Expires' => $iExpiresSeconds,
 				)
 			);
 		}
@@ -299,11 +302,12 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 
 	/**
 	 * Returns user with identifier obtained from the hash.
-	 *
 	 * @param string $sHash
+	 * @param string $sType
+	 * @param string $bAdd5Min
 	 * @return \Aurora\Modules\Core\Classes\User
 	 */
-	protected function getUserByHash($sHash, $sType)
+	protected function getUserByHash($sHash, $sType, $bAdd5Min)
 	{
 		$oUser = null;
 		$oMin = \Aurora\Modules\Min\Module::Decorator();
@@ -314,14 +318,26 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			$bRecoveryLinkAlive = ($iRecoveryLinkLifetimeMinutes === 0);
 			if (!$bRecoveryLinkAlive)
 			{
-				$iDiffMinutes = (time() - $mHash['__time__']) / 60;
+				$iExpiresSeconds = $mHash['Expires'];
+				if ($bAdd5Min)
+				{
+					$iExpiresSeconds += 5 * 60;
+				}
+				$iDiffMinutes = (time() - $iExpiresSeconds) / 60;
 				if ($iDiffMinutes < $iRecoveryLinkLifetimeMinutes)
 				{
 					$bRecoveryLinkAlive = true;
 				}
 				else
 				{
-					throw new \Exception('Recovery link is outdated');
+					if ($sType === 'reset-password')
+					{
+						throw new \Exception($this->i18N('ERROR_RESET_PASSWORD_HASH_OUTDATED'));
+					}
+					else
+					{
+						throw new \Exception($this->i18N('ERROR_CONFIRM_EMAIL_RECOVERY_HASH_OUTDATED'));
+					}
 				}
 			}
 			if ($bRecoveryLinkAlive)
@@ -490,7 +506,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oMail = \Aurora\Modules\Mail\Module::Decorator();
         $oMin = \Aurora\Modules\Min\Module::Decorator();
 
-        $oUser = $this->getUserByHash($Hash, 'reset-password');
+        $oUser = $this->getUserByHash($Hash, 'reset-password', true);
 
         $mResult = false;
         $oAccount = null;

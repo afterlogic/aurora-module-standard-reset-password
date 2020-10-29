@@ -307,7 +307,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	 * @param string $bAdd5Min
 	 * @return \Aurora\Modules\Core\Classes\User
 	 */
-	protected function getUserByHash($sHash, $sType, $bAdd5Min)
+	protected function getUserByHash($sHash, $sType, $bAdd5Min = false)
 	{
 		$oUser = null;
 		$oMin = \Aurora\Modules\Min\Module::Decorator();

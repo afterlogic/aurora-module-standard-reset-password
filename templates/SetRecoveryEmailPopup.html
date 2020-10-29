@@ -6,6 +6,9 @@
 		<span class="popup_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_UPDATE_RECOVERY_EMAIL'}, visible: updateMode()"></span>
 		<div class="fields">
 			<div class="fieldset">
+				<div class="row" data-bind="visible: recoveryEmailInfo">
+					<span data-bind="text: recoveryEmailInfo"></span>
+				</div>
 				<div class="row">
 					<span class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_RECOVERY_EMAIL'}, visible: !updateMode()"></span>
 					<span class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_NEW_RECOVERY_EMAIL'}, visible: updateMode()"></span>

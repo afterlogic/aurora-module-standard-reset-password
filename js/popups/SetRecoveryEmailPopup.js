@@ -29,6 +29,8 @@ function CSetRecoveryEmailPopup()
 	this.passwordFocus = ko.observable(false);
 	this.updateMode = ko.observable(false);
 	this.loading = ko.observable(false);
+	
+	this.recoveryEmailInfo = ko.observable('');
 }
 
 _.extendOwn(CSetRecoveryEmailPopup.prototype, CAbstractPopup.prototype);
@@ -37,6 +39,7 @@ CSetRecoveryEmailPopup.prototype.PopupTemplate = '%ModuleName%_SetRecoveryEmailP
 
 CSetRecoveryEmailPopup.prototype.onOpen = function (fCallback)
 {
+	this.fillRecoveryEmailInfo();
 	this.updateMode(Types.isNonEmptyString(Settings.RecoveryEmail));
 	this.fCallback = fCallback;
 	this.recoveryEmailFocus(true);
@@ -46,6 +49,20 @@ CSetRecoveryEmailPopup.prototype.onClose = function ()
 {
 	this.recoveryEmail('');
 	this.password('');
+};
+
+CSetRecoveryEmailPopup.prototype.fillRecoveryEmailInfo = function ()
+{
+	if (Settings.RecoveryEmail !== '')
+	{
+		this.recoveryEmailInfo(TextUtils.i18n('%MODULENAME%/INFO_YOUR_CURRENT_RECOVERY_EMAIL', {
+			'EMAIL': Settings.RecoveryEmail
+		}));
+	}
+	else
+	{
+		this.recoveryEmailInfo('');
+	}
 };
 
 CSetRecoveryEmailPopup.prototype.save = function ()

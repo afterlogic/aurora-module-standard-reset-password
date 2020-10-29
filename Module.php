@@ -29,26 +29,73 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			array(
 				'RecoveryEmail' => array('string', ''),
 				'PasswordResetHash' => array('string', ''),
+				'ConfirmRecoveryEmailHash' => array('string', ''),
 			)
 		);
 		
 		$this->aErrors = [
 			Enums\ErrorCodes::WrongPassword => $this->i18N('ERROR_WRONG_PASSWORD'),
 		];
+		
+		$this->AddEntry('confirm-recovery-email', 'EntryConfirmRecoveryEmail');
 	}
 
-	protected function getMinId($iUserId, $sSalt = '')
+	public function EntryConfirmRecoveryEmail()
 	{
-		return \implode('|', array(self::GetName(), $iUserId, \md5($iUserId), $sSalt));
+		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
+		$sHash = (string) \Aurora\System\Router::getItemByIndex(1, '');
+		$oModuleManager = \Aurora\System\Api::GetModuleManager();
+		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
+		$sTheme = $oModuleManager->getModuleConfigValue('CoreWebclient', 'Theme');
+		$oUser = $this->getUserByHash($sHash, 'confirm-recovery-email');
+		$ConfirmRecoveryEmailHeading = '';
+		$ConfirmRecoveryEmailInfo = '';
+		if ($oUser instanceof \Aurora\Modules\Core\Classes\User && $sHash === $oUser->{self::GetName().'::ConfirmRecoveryEmailHash'})
+		{
+			$ConfirmRecoveryEmailHeading = $this->i18N('HEADING_CONFIRM_EMAIL_RECOVERY_HASH');
+			$ConfirmRecoveryEmailInfo = \strtr($this->i18N('INFO_CONFIRM_EMAIL_RECOVERY_HASH'), [
+				'%SITE_NAME%' => $sSiteName,
+				'%RECOVERY_EMAIL%' => $oUser->{self::GetName().'::RecoveryEmail'},
+			]);
+			$oMin = \Aurora\Modules\Min\Module::Decorator();
+            if ($oMin)
+			{
+                $oMin->DeleteMinByHash($sHash);
+            }
+			$oUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = '';
+			$oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
+			$oCoreDecorator->UpdateUserObject($oUser);
+		}
+		else
+		{
+			$ConfirmRecoveryEmailHeading = $this->i18N('HEADING_CONFIRM_EMAIL_RECOVERY_HASH');
+			$ConfirmRecoveryEmailInfo = $this->i18N('ERROR_CONFIRM_EMAIL_RECOVERY_HASH');
+		}
+		$sConfirmRecoveryEmailTemplate = \file_get_contents($this->GetPath() . '/templates/EntryConfirmRecoveryEmail.html');
+
+		\Aurora\System\Managers\Response::HtmlOutputHeaders();
+		return \strtr($sConfirmRecoveryEmailTemplate, array(
+			'{{SiteName}}' => $sSiteName . ' - ' . $ConfirmRecoveryEmailHeading,
+			'{{Theme}}' => $sTheme,
+			'{{ConfirmRecoveryEmailHeading}}' => $ConfirmRecoveryEmailHeading,
+			'{{ConfirmRecoveryEmailInfo}}' => $ConfirmRecoveryEmailInfo,
+			'{{ActionOpenApp}}' => \strtr($this->i18N('ACTION_OPEN_SITENAME'), ['%SITE_NAME%' => $sSiteName]),
+			'{{OpenAppUrl}}' => $this->oHttp->GetFullUrl(),
+		));
+	}
+
+	protected function getMinId($iUserId, $sType, $sSalt = '')
+	{
+		return \implode('|', array(self::GetName(), $iUserId, \md5($iUserId), $sType, $sSalt));
 	}
 	
-	protected function generateHash($iUserId, $sSalt = '')
+	protected function generateHash($iUserId, $sType, $sSalt = '')
 	{
 		$mHash = '';
 		$oMin = \Aurora\Modules\Min\Module::Decorator();
 		if ($oMin)
 		{
-			$sMinId = $this->getMinId($iUserId, $sSalt);
+			$sMinId = $this->getMinId($iUserId, $sType, $sSalt);
 			$mHash = $oMin->GetMinByID($sMinId);
 
 			if ($mHash)
@@ -59,7 +106,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			$mHash = $oMin->CreateMin(
 				$sMinId,
 				array(
-					'UserId' => $iUserId
+					'UserId' => $iUserId,
+					'Type' => $sType,
 				)
 			);
 		}
@@ -142,13 +190,16 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	}
 	
 	/**
-	 * Sends notification email with recovery link.
-	 * @param string $Email
-	 * @param string $Hash
+	 * Sends notification email.
+	 * @param string $sRecipientEmail
+	 * @param string $sSubject
+	 * @param string $sBody
+	 * @param bool $bIsHtmlBody
+	 * @param string $sSiteName
 	 * @return bool
 	 * @throws \Exception
 	 */
-	protected function sendResetPasswordNotification($Email, $Hash)
+	protected function sendNotification($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName)
     {
         $oMail = new \PHPMailer();
 
@@ -178,15 +229,13 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 				break;
 		}
 
-		$oModuleManager = \Aurora\System\Api::GetModuleManager();
-		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
         $oMail->setFrom($sFrom);
-        $oMail->addAddress($Email);
+        $oMail->addAddress($sRecipientEmail);
         $oMail->addReplyTo($sFrom, $sSiteName);
 
-        $oMail->Subject = 'Reset your password';
-        $oMail->Body = $this->getResetPasswordNotificationBody($Hash, $sSiteName);
-        $oMail->isHTML(true); // Set email format to HTML
+        $oMail->Subject = $sSubject;
+        $oMail->Body = $sBody;
+        $oMail->isHTML($bIsHtmlBody);
 
 		$bResult = false;
         try
@@ -203,6 +252,50 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		}
 		return $bResult;
 	}
+	
+	protected function sendResetPasswordNotification($sRecipientEmail, $sHash)
+    {
+		$oModuleManager = \Aurora\System\Api::GetModuleManager();
+		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
+		
+        $sBody = \file_get_contents($this->GetPath().'/templates/mail/ResetPassword.html');
+        if (\is_string($sBody))
+        {
+            $sBody = \strtr($sBody, array(
+                '{{RESET_PASSWORD_URL}}' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '/#reset-password/' . $sHash,
+                '{{SITE_NAME}}' => $sSiteName,
+            ));
+        }
+		$bIsHtmlBody = true;
+		$sSubject = $this->i18N('LABEL_RESET_PASSWORD_SUBJECT');
+		return $this->sendNotification($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName);
+	}
+	
+	protected function sendAddedRecoveryEmailNotification($sRecipientEmail, $sHash)
+    {
+		$oModuleManager = \Aurora\System\Api::GetModuleManager();
+		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
+		
+        $sBody = \file_get_contents($this->GetPath().'/templates/mail/AddedRecoveryEmail.html');
+        if (\is_string($sBody))
+        {
+			$sGreeting = $this->i18N('LABEL_CONFIRM_EMAIL_GREETING');
+			$sMessage = \strtr($this->i18N('LABEL_CONFIRM_EMAIL_MESSAGE'), [
+				'%RECOVERY_EMAIL%' => $sRecipientEmail,
+				'%SITE_NAME%' => $sSiteName,
+				'%RESET_PASSWORD_URL%' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '?/confirm-recovery-email/' . $sHash,
+			]);
+			$sSignature = \strtr($this->i18N('LABEL_CONFIRM_EMAIL_SIGNATURE'), ['%SITE_NAME%' => $sSiteName]);
+            $sBody = \strtr($sBody, array(
+				'{{GREETING}}' => $sGreeting,
+                '{{MESSAGE}}' => $sMessage,
+                '{{SIGNATURE}}' => $sSignature,
+            ));
+        }
+		$bIsHtmlBody = true;
+		$sSubject = \strtr($this->i18N('LABEL_CONFIRM_EMAIL_SUBJECT'), ['%RECOVERY_EMAIL%' => $sRecipientEmail]);
+		$this->sendNotification($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName);
+	}
 
 	/**
 	 * Returns user with identifier obtained from the hash.
@@ -210,12 +303,12 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	 * @param string $sHash
 	 * @return \Aurora\Modules\Core\Classes\User
 	 */
-	protected function getUserByHash($sHash)
+	protected function getUserByHash($sHash, $sType)
 	{
 		$oUser = null;
 		$oMin = \Aurora\Modules\Min\Module::Decorator();
 		$mHash = $oMin ? $oMin->GetMinByHash($sHash) : null;
-		if (!empty($mHash) && isset($mHash['__hash__'], $mHash['UserId']))
+		if (!empty($mHash) && isset($mHash['__hash__'], $mHash['UserId'], $mHash['Type']) && $mHash['Type'] === $sType)
 		{
 			$iRecoveryLinkLifetimeMinutes = $this->getConfig('RecoveryLinkLifetimeMinutes', 0);
 			$bRecoveryLinkAlive = ($iRecoveryLinkLifetimeMinutes === 0);
@@ -278,13 +371,18 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	{
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 		
-		$oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
 		$aSettings = [
 			'HashModuleName' => $this->getConfig('HashModuleName', 'login'),
 			'CustomLogoUrl' => $this->getConfig('CustomLogoUrl', ''),
 			'BottomInfoHtmlText' => $this->getConfig('BottomInfoHtmlText', ''),
-			'RecoveryEmail' => $this->getCoveredRecoveryEmail($oAuthenticatedUser),
 		];
+
+		$oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
+		if ($oAuthenticatedUser instanceof \Aurora\Modules\Core\Classes\User && $oAuthenticatedUser->isNormalOrTenant())
+		{
+			$aSettings['RecoveryEmail'] = $this->getCoveredRecoveryEmail($oAuthenticatedUser);
+			$aSettings['RecoveryEmailConfirmed'] = empty($oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmailHash'});
+		}
 		
 		return $aSettings;
 	}
@@ -315,10 +413,13 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			{
 				throw new \Aurora\Modules\StandardResetPassword\Exceptions\Exception(Enums\ErrorCodes::WrongPassword);
 			}
+			$sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oAuthenticatedUser->EntityId, 'confirm-recovery-email', __FUNCTION__) : '';
+			$oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sConfirmRecoveryEmailHash;
 			$oAuthenticatedUser->{self::GetName().'::RecoveryEmail'} = $RecoveryEmail;
 			$oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
 			if ($oCoreDecorator->UpdateUserObject($oAuthenticatedUser))
 			{
+				$this->sendAddedRecoveryEmailNotification($RecoveryEmail, $sConfirmRecoveryEmailHash);
 				return $this->getCoveredRecoveryEmail($oAuthenticatedUser);
 			}
 			else
@@ -348,7 +449,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
 		{
 			$bPrevState = \Aurora\Api::skipCheckUserRole(true);
-			$sPasswordResetHash = $this->generateHash($oUser->EntityId, __FUNCTION__);
+			$sPasswordResetHash = $this->generateHash($oUser->EntityId, 'reset-password', __FUNCTION__);
 			$oUser->{self::GetName().'::PasswordResetHash'} = $sPasswordResetHash;
 			\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
 			\Aurora\Api::skipCheckUserRole($bPrevState);
@@ -373,7 +474,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	{
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 		
-		$oUser = $this->getUserByHash($Hash);
+		$oUser = $this->getUserByHash($Hash, 'reset-password');
 
 		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
 		{
@@ -389,7 +490,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oMail = \Aurora\Modules\Mail\Module::Decorator();
         $oMin = \Aurora\Modules\Min\Module::Decorator();
 
-        $oUser = $this->getUserByHash($Hash);
+        $oUser = $this->getUserByHash($Hash, 'reset-password');
 
         $mResult = false;
         $oAccount = null;

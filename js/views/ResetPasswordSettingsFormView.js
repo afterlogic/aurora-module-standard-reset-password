@@ -24,10 +24,12 @@ function CResetPasswordSettingsFormView()
 	CAbstractSettingsFormView.call(this, '%ModuleName%');
 	
 	this.recoveryEmail = ko.observable(Settings.RecoveryEmail);
+	this.recoveryEmailConfirmed = ko.observable(Settings.RecoveryEmailConfirmed);
 	this.recoveryEmailInfo = ko.computed(function () {
 		if (this.recoveryEmail() !== '')
 		{
-			return TextUtils.i18n('%MODULENAME%/INFO_YOU_HAVE_RECOVERY_EMAIL', {
+			var sLangName = this.recoveryEmailConfirmed() ? 'INFO_YOU_HAVE_RECOVERY_EMAIL' : 'INFO_YOU_HAVE_NOT_CONFIRMED_RECOVERY_EMAIL';
+			return TextUtils.i18n('%MODULENAME%/' + sLangName, {
 				'EMAIL': this.recoveryEmail()
 			});
 		}
@@ -42,17 +44,22 @@ CResetPasswordSettingsFormView.prototype.ViewTemplate = '%ModuleName%_ResetPassw
 CResetPasswordSettingsFormView.prototype.setRecoveryEmail = function ()
 {
 	Popups.showPopup(SetRecoveryEmailPopup, [function (sRecoveryEmail) {
-		Settings.update(sRecoveryEmail);
-		this.recoveryEmail(sRecoveryEmail);
+		this.updateSettings(sRecoveryEmail);
 	}.bind(this)]);
 };
 
 CResetPasswordSettingsFormView.prototype.changeRecoveryEmail = function ()
 {
 	Popups.showPopup(SetRecoveryEmailPopup, [function (sRecoveryEmail) {
-		Settings.update(sRecoveryEmail);
-		this.recoveryEmail(sRecoveryEmail);
+		this.updateSettings(sRecoveryEmail);
 	}.bind(this)]);
+};
+
+CResetPasswordSettingsFormView.prototype.updateSettings = function (sRecoveryEmail)
+{
+	Settings.update(sRecoveryEmail);
+	this.recoveryEmail(Settings.RecoveryEmail);
+	this.recoveryEmailConfirmed(Settings.RecoveryEmailConfirmed);
 };
 
 module.exports = new CResetPasswordSettingsFormView();

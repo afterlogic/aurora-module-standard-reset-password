@@ -56,7 +56,7 @@ function CResetPasswordFormView()
 		}
 		if (!this.gettingUserPublicId())
 		{
-			return TextUtils.i18n('%MODULENAME%/ERROR_RESET_PASSWORD_HASH');
+			return TextUtils.i18n('%MODULENAME%/ERROR_LINK_NOT_VALID');
 		}
 		return '';
 	}, this);

@@ -69,7 +69,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		else
 		{
 			$ConfirmRecoveryEmailHeading = $this->i18N('HEADING_CONFIRM_EMAIL_RECOVERY_HASH');
-			$ConfirmRecoveryEmailInfo = $this->i18N('ERROR_CONFIRM_EMAIL_RECOVERY_HASH');
+			$ConfirmRecoveryEmailInfo = $this->i18N('ERROR_LINK_NOT_VALID');
 		}
 		$sConfirmRecoveryEmailTemplate = \file_get_contents($this->GetPath() . '/templates/EntryConfirmRecoveryEmail.html');
 
@@ -329,14 +329,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 				}
 				else
 				{
-					if ($sType === 'reset-password')
-					{
-						throw new \Exception($this->i18N('ERROR_RESET_PASSWORD_HASH_OUTDATED'));
-					}
-					else
-					{
-						throw new \Exception($this->i18N('ERROR_CONFIRM_EMAIL_RECOVERY_HASH_OUTDATED'));
-					}
+					throw new \Exception($this->i18N('ERROR_LINK_NOT_VALID'));
 				}
 			}
 			if ($bRecoveryLinkAlive)

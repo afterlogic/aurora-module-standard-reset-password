@@ -144,6 +144,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		return [
 			'Host' => $this->getConfig('NotificationHost', ''),
 			'Port' => $this->getConfig('NotificationPort', 25),
+			'UseSsl' => $this->getConfig('NotificationUseSsl', false),
 			'SMTPAuth' => (bool) $this->getConfig('NotificationUseAuth', false),
 			'Username' => $this->getConfig('NotificationLogin', ''),
 			'Password' => $this->getConfig('NotificationPassword', ''),
@@ -179,11 +180,13 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			case \Aurora\Modules\Mail\Enums\SmtpAuthType::NoAuthentication:
 				break;
 			case \Aurora\Modules\Mail\Enums\SmtpAuthType::UseSpecifiedCredentials:
+				$aConfig['UseSsl'] = $oSendServer->OutgoingUseSsl;
 				$aConfig['SMTPAuth'] = true;
 				$aConfig['Username'] = $oSendServer->SmtpLogin;
 				$aConfig['Password'] = $oSendServer->SmtpPassword;
 				break;
 			case \Aurora\Modules\Mail\Enums\SmtpAuthType::UseUserCredentials:
+				$aConfig['UseSsl'] = $oSendServer->OutgoingUseSsl;
 				$aConfig['SMTPAuth'] = true;
 				$aConfig['Username'] = $oSendAccount->IncomingLogin;
 				$aConfig['Password'] = $oSendAccount->getPassword();
@@ -220,6 +223,10 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 				$oMail->Host = $aConfig['Host'];
 				$oMail->Port = $aConfig['Port'];
 				$oMail->SMTPAuth = $aConfig['SMTPAuth'];
+				if ($aConfig['UseSsl'])
+				{
+					$oMail->SMTPSecure = 'ssl';
+				}
 				$oMail->Username = $aConfig['Username'];
 				$oMail->Password = $aConfig['Password'];
 				$oMail->SMTPOptions = array(

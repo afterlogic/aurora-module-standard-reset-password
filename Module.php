@@ -118,27 +118,6 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		return $mHash;
 	}
 
-	/**
-	 * Creates reset password notification body.
-	 * @param string $sHash
-	 * @param string $sSiteName
-	 * @return string
-	 */
-	protected function getResetPasswordNotificationBody($sHash, $sSiteName)
-    {
-        $sBody = \file_get_contents($this->GetPath().'/templates/mail/ResetPassword.html');
-
-        if (\is_string($sBody))
-        {
-            $sBody = \strtr($sBody, array(
-                '{{RESET_PASSWORD_URL}}' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '/#reset-password/' . $sHash,
-                '{{SITE_NAME}}' => $sSiteName
-            ));
-        }
-
-		return $sBody;
-	}
-
 	protected function getSmtpConfig()
     {
 		return [
@@ -171,6 +150,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		$aConfig = [
 			'Host' => $oSendServer->OutgoingServer,
 			'Port' => $oSendServer->OutgoingPort,
+			'UseSsl' => false,
 			'SMTPAuth' => false,
 			'Username' => '',
 			'Password' => '',
@@ -205,7 +185,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	 * @return bool
 	 * @throws \Exception
 	 */
-	protected function sendNotification($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName)
+	protected function sendMessage($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName)
     {
         $oMail = new \PHPMailer();
 
@@ -255,15 +235,23 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		catch (\Exception $oEx)
 		{
 			\Aurora\System\Api::LogException($oEx);
-        }
+			throw new \Exception($oEx->getMessage());
+		}
 		if (!$bResult && !empty($oMail->ErrorInfo))
 		{
 			\Aurora\System\Api::Log("Message could not be sent. Mailer Error: {$oMail->ErrorInfo}");
+			throw new \Exception($oMail->ErrorInfo);
 		}
 		return $bResult;
 	}
 	
-	protected function sendResetPasswordNotification($sRecipientEmail, $sHash)
+	/**
+	 * Sends password reset message.
+	 * @param string $sRecipientEmail
+	 * @param string $sHash
+	 * @return boolean
+	 */
+	protected function sendPasswordResetMessage($sRecipientEmail, $sHash)
     {
 		$oModuleManager = \Aurora\System\Api::GetModuleManager();
 		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
@@ -278,10 +266,16 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         }
 		$bIsHtmlBody = true;
 		$sSubject = $this->i18N('LABEL_RESET_PASSWORD_SUBJECT');
-		return $this->sendNotification($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName);
+		return $this->sendMessage($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName);
 	}
 	
-	protected function sendAddedRecoveryEmailNotification($sRecipientEmail, $sHash)
+	/**
+	 * Sends recovery email confirmation message.
+	 * @param string $sRecipientEmail
+	 * @param string $sHash
+	 * @return bool
+	 */
+	protected function sendRecoveryEmailConfirmationMessage($sRecipientEmail, $sHash)
     {
 		$oModuleManager = \Aurora\System\Api::GetModuleManager();
 		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
@@ -304,7 +298,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         }
 		$bIsHtmlBody = true;
 		$sSubject = \strtr($this->i18N('LABEL_CONFIRM_EMAIL_SUBJECT'), ['%RECOVERY_EMAIL%' => $sRecipientEmail]);
-		$this->sendNotification($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName);
+		return $this->sendMessage($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName);
 	}
 
 	/**
@@ -350,7 +344,12 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		return $oUser;
 	}
 	
-	protected function getCoveredRecoveryEmail($oUser)
+	/**
+	 * Get recovery email address partly replaced with stars.
+	 * @param \Aurora\Modules\Core\Classes\User $oUser
+	 * @return string
+	 */
+	protected function getStarredRecoveryEmail($oUser)
 	{
 		$sResult = '';
 
@@ -395,7 +394,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		$oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
 		if ($oAuthenticatedUser instanceof \Aurora\Modules\Core\Classes\User && $oAuthenticatedUser->isNormalOrTenant())
 		{
-			$aSettings['RecoveryEmail'] = $this->getCoveredRecoveryEmail($oAuthenticatedUser);
+			$aSettings['RecoveryEmail'] = $this->getStarredRecoveryEmail($oAuthenticatedUser);
 			$aSettings['RecoveryEmailConfirmed'] = empty($oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmailHash'});
 		}
 		
@@ -428,14 +427,40 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			{
 				throw new \Aurora\Modules\StandardResetPassword\Exceptions\Exception(Enums\ErrorCodes::WrongPassword);
 			}
+			
+			$sPrevRecoveryEmail = $oAuthenticatedUser->{self::GetName().'::RecoveryEmail'};
+			$sPrevConfirmRecoveryEmail = $oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmail'};
 			$sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oAuthenticatedUser->EntityId, 'confirm-recovery-email', __FUNCTION__) : '';
 			$oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sConfirmRecoveryEmailHash;
 			$oAuthenticatedUser->{self::GetName().'::RecoveryEmail'} = $RecoveryEmail;
-			$oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
-			if ($oCoreDecorator->UpdateUserObject($oAuthenticatedUser))
+			if (\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oAuthenticatedUser))
 			{
-				$this->sendAddedRecoveryEmailNotification($RecoveryEmail, $sConfirmRecoveryEmailHash);
-				return $this->getCoveredRecoveryEmail($oAuthenticatedUser);
+				$bResult = true;
+				$oSentEx = null;
+				try
+				{
+					// Send message to confirm recovery email if it's not empty.
+					if (!empty($RecoveryEmail))
+					{
+						$bResult = $this->sendRecoveryEmailConfirmationMessage($RecoveryEmail, $sConfirmRecoveryEmailHash);
+					}
+				}
+				catch (\Exception $oEx)
+				{
+					$bResult = false;
+					$oSentEx = $oEx;
+				}
+				if (!$bResult)
+				{
+					$oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sPrevConfirmRecoveryEmail;
+					$oAuthenticatedUser->{self::GetName().'::RecoveryEmail'} = $sPrevRecoveryEmail;
+					\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oAuthenticatedUser);
+				}
+				if ($oSentEx !== null)
+				{
+					throw $oSentEx;
+				}
+				return $bResult ? $this->getStarredRecoveryEmail($oAuthenticatedUser) : false;
 			}
 			else
 			{
@@ -446,10 +471,15 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::AccessDenied);
 	}
 	
-	public function GetRecoveryEmail($UserPublicId)
+	/**
+	 * Get recovery email address partly replaced with stars.
+	 * @param string $UserPublicId
+	 * @return string
+	 */
+	public function GetStarredRecoveryEmailAddress($UserPublicId)
 	{
 		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
-		$sRecoveryEmail = $this->getCoveredRecoveryEmail($oUser);
+		$sRecoveryEmail = $this->getStarredRecoveryEmail($oUser);
 		$sConfirmRecoveryEmailHash = $oUser->{self::GetName().'::ConfirmRecoveryEmailHash'};
 		if  (!empty($sConfirmRecoveryEmailHash)) // email is not confirmed
 		{
@@ -464,7 +494,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	 * @return boolean
 	 * @throws \Exception
 	 */
-	public function SendRecoveryEmail($UserPublicId)
+	public function SendPasswordResetEmail($UserPublicId)
 	{
 		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
 		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
@@ -479,7 +509,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			$sConfirmRecoveryEmailHash = $oUser->{self::GetName().'::ConfirmRecoveryEmailHash'};
 			if  (!empty($sRecoveryEmail) && empty($sConfirmRecoveryEmailHash))
 			{
-				return $this->sendResetPasswordNotification($sRecoveryEmail, $sPasswordResetHash);
+				return $this->sendPasswordResetMessage($sRecoveryEmail, $sPasswordResetHash);
 			}
 		}
 		
@@ -505,6 +535,13 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		return '';
 	}
 	
+	/**
+	 * Changes password if hash is valid.
+	 * @param string $Hash
+	 * @param string $NewPassword
+	 * @return boolean
+	 * @throws \Aurora\System\Exceptions\ApiException
+	 */
     public function ChangePassword($Hash, $NewPassword)
     {
 		$bPrevState =  \Aurora\System\Api::skipCheckUserRole(true);

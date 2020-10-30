@@ -140,7 +140,7 @@ CResetPasswordFormView.prototype.continue = function ()
 	else
 	{
 		this.gettingRecoveryEmail(true);
-		Ajax.send('%ModuleName%', 'GetRecoveryEmail', { UserPublicId: this.email() }, function (oResponse, oRequest) {
+		Ajax.send('%ModuleName%', 'GetStarredRecoveryEmailAddress', { UserPublicId: this.email() }, function (oResponse, oRequest) {
 			this.gettingRecoveryEmail(false);
 			if (Types.isNonEmptyString(oResponse && oResponse.Result))
 			{
@@ -175,7 +175,7 @@ CResetPasswordFormView.prototype.backToStep1 = function ()
 CResetPasswordFormView.prototype.sendRecoveryEmail = function ()
 {
 	this.sendingRecoveryEmail(true);
-	Ajax.send('%ModuleName%', 'SendRecoveryEmail', { UserPublicId: this.email() }, function (oResponse, oRequest) {
+	Ajax.send('%ModuleName%', 'SendPasswordResetEmail', { UserPublicId: this.email() }, function (oResponse, oRequest) {
 		this.sendingRecoveryEmail(false);
 		if (oResponse && oResponse.Result)
 		{

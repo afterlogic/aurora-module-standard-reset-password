@@ -442,7 +442,13 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	public function GetRecoveryEmail($UserPublicId)
 	{
 		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
-		return $this->getCoveredRecoveryEmail($oUser);
+		$sRecoveryEmail = $this->getCoveredRecoveryEmail($oUser);
+		$sConfirmRecoveryEmailHash = $oUser->{self::GetName().'::ConfirmRecoveryEmailHash'};
+		if  (!empty($sConfirmRecoveryEmailHash)) // email is not confirmed
+		{
+			$sRecoveryEmail = '';
+		}
+		return $sRecoveryEmail;
 	}
 	
 	/**
@@ -463,13 +469,14 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			\Aurora\Api::skipCheckUserRole($bPrevState);
 
 			$sRecoveryEmail = $oUser->{self::GetName().'::RecoveryEmail'};
-			if  (!empty($sRecoveryEmail))
+			$sConfirmRecoveryEmailHash = $oUser->{self::GetName().'::ConfirmRecoveryEmailHash'};
+			if  (!empty($sRecoveryEmail) && empty($sConfirmRecoveryEmailHash))
 			{
 				return $this->sendResetPasswordNotification($sRecoveryEmail, $sPasswordResetHash);
 			}
 		}
 		
-		throw new \Exception('Recovery email is not found for specified email');
+		throw new \Exception($this->i18N('ERROR_RECOVERY_EMAIL_NOT_FOUND'));
 	}
 	
 	/**

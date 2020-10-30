@@ -256,12 +256,19 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		$oModuleManager = \Aurora\System\Api::GetModuleManager();
 		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
 		
-        $sBody = \file_get_contents($this->GetPath().'/templates/mail/ResetPassword.html');
+        $sBody = \file_get_contents($this->GetPath().'/templates/mail/Message.html');
         if (\is_string($sBody))
         {
+			$sGreeting = $this->i18N('LABEL_MESSAGE_GREETING');
+			$sMessage = \strtr($this->i18N('LABEL_RESET_PASSWORD_MESSAGE'), [
+				'%SITE_NAME%' => $sSiteName,
+				'%RESET_PASSWORD_URL%' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '/#reset-password/' . $sHash,
+			]);
+			$sSignature = \strtr($this->i18N('LABEL_MESSAGE_SIGNATURE'), ['%SITE_NAME%' => $sSiteName]);
             $sBody = \strtr($sBody, array(
-                '{{RESET_PASSWORD_URL}}' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '/#reset-password/' . $sHash,
-                '{{SITE_NAME}}' => $sSiteName,
+				'{{GREETING}}' => $sGreeting,
+                '{{MESSAGE}}' => $sMessage,
+                '{{SIGNATURE}}' => $sSignature,
             ));
         }
 		$bIsHtmlBody = true;
@@ -280,16 +287,16 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		$oModuleManager = \Aurora\System\Api::GetModuleManager();
 		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
 		
-        $sBody = \file_get_contents($this->GetPath().'/templates/mail/AddedRecoveryEmail.html');
+        $sBody = \file_get_contents($this->GetPath().'/templates/mail/Message.html');
         if (\is_string($sBody))
         {
-			$sGreeting = $this->i18N('LABEL_CONFIRM_EMAIL_GREETING');
+			$sGreeting = $this->i18N('LABEL_MESSAGE_GREETING');
 			$sMessage = \strtr($this->i18N('LABEL_CONFIRM_EMAIL_MESSAGE'), [
 				'%RECOVERY_EMAIL%' => $sRecipientEmail,
 				'%SITE_NAME%' => $sSiteName,
 				'%RESET_PASSWORD_URL%' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '?/confirm-recovery-email/' . $sHash,
 			]);
-			$sSignature = \strtr($this->i18N('LABEL_CONFIRM_EMAIL_SIGNATURE'), ['%SITE_NAME%' => $sSiteName]);
+			$sSignature = \strtr($this->i18N('LABEL_MESSAGE_SIGNATURE'), ['%SITE_NAME%' => $sSiteName]);
             $sBody = \strtr($sBody, array(
 				'{{GREETING}}' => $sGreeting,
                 '{{MESSAGE}}' => $sMessage,

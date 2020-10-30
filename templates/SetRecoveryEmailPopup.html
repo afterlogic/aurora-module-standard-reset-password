@@ -20,6 +20,10 @@
 				</div>
 				<div class="row">
 					<span class="label" data-bind="i18n: {'key': 'COREWEBCLIENT/LABEL_PASSWORD'}"></span>
+					<!-- fake fields are a workaround for autofill getting the wrong fields -->
+					<input style="display:none" type="text" name="fakeusernameremembered"/>
+					<input style="display:none" type="password" name="fakepasswordremembered"/>
+
 					<input class="value input" spellcheck="false" type="password" maxlength="255"
 						   data-bind="value: password, valueUpdate: 'afterkeydown', onEnter: save, hasfocus: passwordFocus"/>
 				</div>

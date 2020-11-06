@@ -11,12 +11,13 @@ module.exports = function (oAppData) {
 		
 		Settings = require('modules/%ModuleName%/js/Settings.js'),
 		
-		bAnonimUser = App.getUserRole() === Enums.UserRole.Anonymous
+		bAnonymousUser = App.getUserRole() === Enums.UserRole.Anonymous,
+		bSuperAdmin = App.getUserRole() === Enums.UserRole.SuperAdmin
 	;
 	
 	Settings.init(oAppData);
 	
-	if (!App.isPublic() && bAnonimUser)
+	if (!App.isPublic() && bAnonymousUser)
 	{
 		if (App.isMobile())
 		{
@@ -68,6 +69,28 @@ module.exports = function (oAppData) {
 			}
 		};
 	}
-	
+	else if (bSuperAdmin)
+	{
+		Settings.init(oAppData);
+
+		return {
+			start: function (ModulesManager) {
+				ModulesManager.run('AdminPanelWebclient', 'registerAdminPanelTab', [
+					function(resolve) {
+						require.ensure(
+							['modules/%ModuleName%/js/views/AdminSettingsView.js'],
+							function() {
+								resolve(require('modules/%ModuleName%/js/views/AdminSettingsView.js'));
+							},
+							'admin-bundle'
+						);
+					},
+					Settings.HashModuleName,
+					TextUtils.i18n('%MODULENAME%/LABEL_SETTINGS_TAB')
+				]);
+			}
+		};
+	}
+
 	return null;
 };

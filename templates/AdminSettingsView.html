@@ -1,0 +1,81 @@
+<div class="panel_top">
+	<h2 class="settings_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_SETTINGS_TAB'}"></h2>
+</div>
+<div class="panel_center">
+	<div class="fields">
+		<div class="fieldset">
+			<div class="row">
+				<span class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_RECOVERY_LINK_LIFETIME_MINUTES'}"></span>
+				<span class="value">
+					<input class="input" type="text" data-bind="value: recoveryLinkLifetimeMinutes, valueUpdate: 'afterkeydown', onEnter: save">
+				</span>
+			</div>
+			<div class="row hint" style="margin-top: -6px;">
+				<span class="value" data-bind="i18n: {'key': '%MODULENAME%/HINT_RECOVERY_LINK_LIFETIME'}"></span>
+			</div>
+			<div class="row">
+				<span class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_NOTIFICATION_EMAIL'}"></span>
+				<span class="value">
+					<input class="input" type="text" data-bind="value: notificationEmail, valueUpdate: 'afterkeydown', onEnter: save">
+				</span>
+			</div>
+			<div class="row">
+				<span class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_NOTIFICATION_TYPE'}"></span>
+				<span class="value">
+					<select class="input" data-bind="value: notificationType">
+						<option value="mail" data-bind="i18n: {'key': '%MODULENAME%/LABEL_NOTIFICATION_TYPE_MAIL'}"></option>
+						<option value="smtp" data-bind="i18n: {'key': '%MODULENAME%/LABEL_NOTIFICATION_TYPE_SMTP'}"></option>
+						<option value="account" data-bind="i18n: {'key': '%MODULENAME%/LABEL_NOTIFICATION_TYPE_ACCOUNT'}"></option>
+					</select>
+				</span>
+			</div>
+			<div class="row hint" style="margin-top: -6px;">
+				<span class="value" data-bind="i18n: {'key': '%MODULENAME%/HINT_NOTIFICATION_TYPE_MAIL'}, visible: notificationType() === 'mail'"></span>
+				<span class="value" data-bind="i18n: {'key': '%MODULENAME%/HINT_NOTIFICATION_TYPE_SMTP'}, visible: notificationType() === 'smtp'"></span>
+				<span class="value" data-bind="i18n: {'key': '%MODULENAME%/HINT_NOTIFICATION_TYPE_ACCOUNT'}, visible: notificationType() === 'account'"></span>
+			</div>
+			<div class="row outgoing" data-bind="visible: notificationType() === 'smtp'">
+				<span class="label" data-bind="i18n: {'key': '%MODULENAME%/LABEL_NOTIFICATION_HOST'}"></span>
+				<input class="value input server" spellcheck="false" type="text" maxlength="255"
+					   data-bind="value: notificationHost, valueUpdate: 'afterkeydown', onEnter: save"/>
+
+				<span class="label" style="width: auto; margin-left: 10px;"
+					  data-bind="i18n: {'key': '%MODULENAME%/LABEL_NOTIFICATION_PORT'}"></span>
+				<input class="value input port" spellcheck="false" type="text" maxlength="5"
+					   data-bind="value: notificationPort, valueUpdate: 'afterkeydown', onEnter: save"/>
+
+				<span>
+					<label class="custom_checkbox" data-bind="css: {'checked': notificationUseSsl}">
+						<span class="icon"></span>
+						<input type="checkbox" id="notificationUseSsl" data-bind="checked: notificationUseSsl" />
+					</label>
+					<label for="notificationUseSsl" data-bind="i18n: {'key': '%MODULENAME%/LABEL_NOTIFICATION_USE_SSL'}"></label>
+				</span>
+			</div>
+			<div class="row smtp_authentication" data-bind="visible: notificationType() === 'smtp'">
+				<span class="label">
+					<label class="custom_checkbox" data-bind="css: {'checked': notificationUseAuth}">
+						<span class="icon"></span>
+						<input type="checkbox" id="notificationUseAuth" data-bind="checked: notificationUseAuth" />
+					</label>
+					<label for="notificationUseAuth" data-bind="i18n: {'key': '%MODULENAME%/LABEL_NOTIFICATION_USE_AUTH'}"></label>
+				</span>
+				<span class="value">
+					<input type="text" class="input" data-bind="i18n: {'key': 'COREWEBCLIENT/LABEL_LOGIN', 'type': 'placeholder'},
+								value: notificationLogin, enable: notificationUseAuth, css: {'disabled': !notificationUseAuth()}" style="margin-left: 0;" />
+					<input type="password" class="input" data-bind="i18n: {'key': 'COREWEBCLIENT/LABEL_PASSWORD', 'type': 'placeholder'},
+								value: notificationPassword, enable: notificationUseAuth, css: {'disabled': !notificationUseAuth()}" />
+				</span>
+			</div>
+		</div>
+
+		<div class="buttons">
+			<span class="button" data-bind="click: save, visible: !isSaving()">
+				<span data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'}"></span>
+			</span>
+			<span class="button" data-bind="visible: isSaving()">
+				<span data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE_IN_PROGRESS'}"></span>
+			</span>
+		</div>
+	</div>
+</div>

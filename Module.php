@@ -399,12 +399,27 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		];
 
 		$oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
-		if ($oAuthenticatedUser instanceof \Aurora\Modules\Core\Classes\User && $oAuthenticatedUser->isNormalOrTenant())
-		{
-			$aSettings['RecoveryEmail'] = $this->getStarredRecoveryEmail($oAuthenticatedUser);
-			$aSettings['RecoveryEmailConfirmed'] = empty($oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmailHash'});
-		}
-		
+		if ($oAuthenticatedUser instanceof \Aurora\Modules\Core\Classes\User)
+        {
+            if ($oAuthenticatedUser->isNormalOrTenant())
+            {
+                $aSettings['RecoveryEmail'] = $this->getStarredRecoveryEmail($oAuthenticatedUser);
+                $aSettings['RecoveryEmailConfirmed'] = empty($oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmailHash'});
+            }
+            if ($oAuthenticatedUser->Role === \Aurora\System\Enums\UserRole::SuperAdmin)
+            {
+                $aSettings['RecoveryLinkLifetimeMinutes'] = $this->getConfig('RecoveryLinkLifetimeMinutes', 15);
+                $aSettings['NotificationEmail'] = $this->getConfig('NotificationEmail', '');
+                $aSettings['NotificationType'] = $this->getConfig('NotificationType', '');
+                $aSettings['NotificationHost'] = $this->getConfig('NotificationHost', '');
+                $aSettings['NotificationPort'] = $this->getConfig('NotificationPort', 25);
+                $aSettings['NotificationUseSsl'] = $this->getConfig('NotificationUseSsl', false);
+                $aSettings['NotificationUseAuth'] = $this->getConfig('NotificationUseAuth', false);
+                $aSettings['NotificationLogin'] = $this->getConfig('NotificationLogin', '');
+                $aSettings['HasNotificationPassword'] = !empty($this->getConfig('NotificationPassword', ''));
+            }
+        }
+
 		return $aSettings;
 	}
 	
@@ -477,6 +492,30 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 
 		throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::AccessDenied);
 	}
+
+	public function UpdateAdminSettings($RecoveryLinkLifetimeMinutes, $NotificationEmail, $NotificationType, $NotificationHost = null,
+                                        $NotificationPort = null, $NotificationUseSsl = null, $NotificationUseAuth = null,
+                                        $NotificationLogin = null, $NotificationPassword = null)
+    {
+        \Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::SuperAdmin);
+
+        $this->setConfig('RecoveryLinkLifetimeMinutes', $RecoveryLinkLifetimeMinutes);
+        $this->setConfig('NotificationEmail', $NotificationEmail);
+        $this->setConfig('NotificationType', $NotificationType);
+        if ($NotificationType === 'smtp')
+        {
+            $this->setConfig('NotificationHost', $NotificationHost);
+            $this->setConfig('NotificationPort', $NotificationPort);
+            $this->setConfig('NotificationUseSsl', $NotificationUseSsl);
+            $this->setConfig('NotificationUseAuth', $NotificationUseAuth);
+            if ($NotificationUseAuth)
+            {
+                $this->setConfig('NotificationLogin', $NotificationLogin);
+                $this->setConfig('NotificationPassword', $NotificationPassword);
+            }
+        }
+        return $this->saveModuleConfig();
+    }
 	
 	/**
 	 * Get recovery email address partly replaced with stars.

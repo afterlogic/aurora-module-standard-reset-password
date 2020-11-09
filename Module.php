@@ -126,7 +126,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			'UseSsl' => $this->getConfig('NotificationUseSsl', false),
 			'SMTPAuth' => (bool) $this->getConfig('NotificationUseAuth', false),
 			'Username' => $this->getConfig('NotificationLogin', ''),
-			'Password' => $this->getConfig('NotificationPassword', ''),
+			'Password' => \Aurora\System\Utils::DecryptValue($this->getConfig('NotificationPassword', '')),
 		];
 	}
 	
@@ -511,7 +511,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             if ($NotificationUseAuth)
             {
                 $this->setConfig('NotificationLogin', $NotificationLogin);
-                $this->setConfig('NotificationPassword', $NotificationPassword);
+                $this->setConfig('NotificationPassword', \Aurora\System\Utils::EncryptValue($NotificationPassword));
             }
         }
         return $this->saveModuleConfig();

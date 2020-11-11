@@ -19,18 +19,35 @@ module.exports = function (oAppData) {
 	
 	if (!App.isPublic() && bAnonymousUser)
 	{
+		var fAddControllersToLoginScreen = function () {
+			App.subscribeEvent('AnonymousUserForm::PopulateBeforeButtonsControllers', _.bind(function (oParams) {
+				if (_.isFunction(oParams.RegisterBeforeButtonsController) && (oParams.ModuleName === 'StandardLoginFormWebclient' || oParams.ModuleName === 'MailLoginFormWebclient'))
+				{
+					oParams.RegisterBeforeButtonsController(require('modules/%ModuleName%/js/views/ForgotPasswordController.js'));
+				}
+			}, this));
+		};
+		
 		if (App.isMobile())
 		{
 			return {
-				/**
-				 * Returns reset password view screen as is.
-				 */
-				getResetPasswordScreenView: function () {
-					return require('modules/%ModuleName%/js/views/ResetPasswordFormView.js');
+				start: function (ModulesManager)
+				{
+					fAddControllersToLoginScreen();
 				},
-				
-				getHashModuleName: function () {
-					return Settings.HashModuleName;
+				getScreens: function () {
+					var
+						oScreens = {},
+						oLoginScreenView = require('modules/%ModuleName%/js/views/ResetPasswordFormView.js')
+					;
+					if (oLoginScreenView)
+					{
+						oLoginScreenView.ViewTemplate = '%ModuleName%_ResetPasswordMobileFormView';
+						oScreens[Settings.HashModuleName] = function () {
+							return oLoginScreenView;
+						};
+					}
+					return oScreens;
 				}
 			};
 		}
@@ -39,13 +56,7 @@ module.exports = function (oAppData) {
 			return {
 				start: function (ModulesManager)
 				{
-					App.subscribeEvent('AnonymousUserForm::PopulateBeforeButtonsControllers', _.bind(function (oParams) {
-						console.log('oParams', oParams);
-						if (_.isFunction(oParams.RegisterBeforeButtonsController) && (oParams.ModuleName === 'StandardLoginFormWebclient' || oParams.ModuleName === 'MailLoginFormWebclient'))
-						{
-							oParams.RegisterBeforeButtonsController(require('modules/%ModuleName%/js/views/ForgotPasswordController.js'));
-						}
-					}, this));
+					fAddControllersToLoginScreen();
 				},
 				getScreens: function () {
 					var oScreens = {};
@@ -57,7 +68,7 @@ module.exports = function (oAppData) {
 			};
 		}
 	}
-	else if (App.isUserNormalOrTenant())
+	else if (App.isUserNormalOrTenant() && !App.isMobile())
 	{
 		return {
 			start: function (ModulesManager) {

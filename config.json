@@ -3,6 +3,10 @@
 		false,
 		"bool"
 	],
+    "IncludeInMobile": [
+		true,
+		"bool"
+	],
     "HashModuleName": [
 		"reset-password",
 		"string"

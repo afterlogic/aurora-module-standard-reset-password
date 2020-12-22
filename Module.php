@@ -145,32 +145,37 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 
 	protected function getAccountConfig($sEmail)
     {
-		$oSendAccount = $this->getAccountByEmail($sEmail);
-		$oSendServer = $oSendAccount->getServer();
 		$aConfig = [
-			'Host' => $oSendServer->OutgoingServer,
-			'Port' => $oSendServer->OutgoingPort,
+			'Host' => '',
+			'Port' => '',
 			'UseSsl' => false,
 			'SMTPAuth' => false,
 			'Username' => '',
 			'Password' => '',
 		];
-		switch ($oSendServer->SmtpAuthType)
+		$oSendAccount = $this->getAccountByEmail($sEmail);
+		$oSendServer = $oSendAccount ? $oSendAccount->getServer() : null;
+		if ($oSendServer)
 		{
-			case \Aurora\Modules\Mail\Enums\SmtpAuthType::NoAuthentication:
-				break;
-			case \Aurora\Modules\Mail\Enums\SmtpAuthType::UseSpecifiedCredentials:
-				$aConfig['UseSsl'] = $oSendServer->OutgoingUseSsl;
-				$aConfig['SMTPAuth'] = true;
-				$aConfig['Username'] = $oSendServer->SmtpLogin;
-				$aConfig['Password'] = $oSendServer->SmtpPassword;
-				break;
-			case \Aurora\Modules\Mail\Enums\SmtpAuthType::UseUserCredentials:
-				$aConfig['UseSsl'] = $oSendServer->OutgoingUseSsl;
-				$aConfig['SMTPAuth'] = true;
-				$aConfig['Username'] = $oSendAccount->IncomingLogin;
-				$aConfig['Password'] = $oSendAccount->getPassword();
-				break;
+			$aConfig['Host'] = $oSendServer->OutgoingServer;
+			$aConfig['Port'] = $oSendServer->OutgoingPort;
+			switch ($oSendServer->SmtpAuthType)
+			{
+				case \Aurora\Modules\Mail\Enums\SmtpAuthType::NoAuthentication:
+					break;
+				case \Aurora\Modules\Mail\Enums\SmtpAuthType::UseSpecifiedCredentials:
+					$aConfig['UseSsl'] = $oSendServer->OutgoingUseSsl;
+					$aConfig['SMTPAuth'] = true;
+					$aConfig['Username'] = $oSendServer->SmtpLogin;
+					$aConfig['Password'] = $oSendServer->SmtpPassword;
+					break;
+				case \Aurora\Modules\Mail\Enums\SmtpAuthType::UseUserCredentials:
+					$aConfig['UseSsl'] = $oSendServer->OutgoingUseSsl;
+					$aConfig['SMTPAuth'] = true;
+					$aConfig['Username'] = $oSendAccount->IncomingLogin;
+					$aConfig['Password'] = $oSendAccount->getPassword();
+					break;
+			}
 		}
 		return $aConfig;
 	}

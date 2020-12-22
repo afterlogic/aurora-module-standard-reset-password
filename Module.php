@@ -73,7 +73,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		}
 		$sConfirmRecoveryEmailTemplate = \file_get_contents($this->GetPath() . '/templates/EntryConfirmRecoveryEmail.html');
 
-		\Aurora\System\Managers\Response::HtmlOutputHeaders();
+		\Aurora\Modules\CoreWebclient\Module::Decorator()->SetHtmlOutputHeaders();
 		return \strtr($sConfirmRecoveryEmailTemplate, array(
 			'{{SiteName}}' => $sSiteName . ' - ' . $ConfirmRecoveryEmailHeading,
 			'{{Theme}}' => $sTheme,

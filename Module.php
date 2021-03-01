@@ -515,62 +515,6 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	 * @throws \Aurora\System\Exceptions\ApiException
 	 * @throws \Aurora\Modules\StandardResetPassword\Exceptions\Exception
 	 */
-	public function SetRecoveryEmail($UserPublicId = null, $RecoveryEmail = null)
-	{
-		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::SuperAdmin);
-
-		if ($UserPublicId === null || $RecoveryEmail === null)
-		{
-      throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::InvalidInputParameter);
-    }
-
-    $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
-    
-		if ($oUser instanceof \Aurora\Modules\Core\Classes\User && $oUser->isNormalOrTenant())
-		{
-			$sPrevRecoveryEmail = $oUser->{self::GetName().'::RecoveryEmail'};
-			$sPrevConfirmRecoveryEmail = $oUser->{self::GetName().'::ConfirmRecoveryEmail'};
-			$sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oUser->EntityId, 'confirm-recovery-email', __FUNCTION__) : '';
-			$oUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sConfirmRecoveryEmailHash;
-			$oUser->{self::GetName().'::RecoveryEmail'} = $RecoveryEmail;
-			if (\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser))
-			{
-				$bResult = true;
-				$oSentEx = null;
-				try
-				{
-					// Send message to confirm recovery email if it's not empty.
-					if (!empty($RecoveryEmail))
-					{
-						$bResult = $this->sendRecoveryEmailConfirmationMessage($RecoveryEmail, $sConfirmRecoveryEmailHash);
-					}
-				}
-				catch (\Exception $oEx)
-				{
-					$bResult = false;
-					$oSentEx = $oEx;
-				}
-				if (!$bResult)
-				{
-					$oUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sPrevConfirmRecoveryEmail;
-					$oUser->{self::GetName().'::RecoveryEmail'} = $sPrevRecoveryEmail;
-					\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
-				}
-				if ($oSentEx !== null)
-				{
-					throw $oSentEx;
-				}
-				return $bResult ? $this->getStarredRecoveryEmail($oUser) : false;
-			}
-			else
-			{
-				return false;
-			}
-		}
-
-		throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::AccessDenied);
-	}
-
 	public function UpdateAdminSettings($RecoveryLinkLifetimeMinutes, $NotificationEmail, $NotificationType, $NotificationHost = null,
                                         $NotificationPort = null, $NotificationUseSsl = null, $NotificationUseAuth = null,
                                         $NotificationLogin = null, $NotificationPassword = null)
@@ -615,8 +559,9 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			$oUser->{self::GetName().'::RecoveryEmail'} = $RecoveryEmail;
 			if (\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser))
 			{
+				$bResult = true;
+				
 				if (!$SkipEmailConfirmation) {
-					$bResult = true;
 					$oSentEx = null;
 					try
 					{

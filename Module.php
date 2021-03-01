@@ -478,7 +478,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::AccessDenied);
 	}
 	
-	public function SetRecoveryEmail($UserPublicId = null, $RecoveryEmail = null)
+	public function SetRecoveryEmail($UserPublicId = null, $RecoveryEmail = null, $SkipEmailConfirmation = false)
 	{
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::SuperAdmin);
 
@@ -494,34 +494,36 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			$sPrevRecoveryEmail = $oUser->{self::GetName().'::RecoveryEmail'};
 			$sPrevConfirmRecoveryEmail = $oUser->{self::GetName().'::ConfirmRecoveryEmail'};
 			$sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oUser->EntityId, 'confirm-recovery-email', __FUNCTION__) : '';
-			$oUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sConfirmRecoveryEmailHash;
+			$oUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = !$SkipEmailConfirmation ? !$sConfirmRecoveryEmailHash : '';
 			$oUser->{self::GetName().'::RecoveryEmail'} = $RecoveryEmail;
 			if (\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser))
 			{
-				$bResult = true;
-				$oSentEx = null;
-				try
-				{
-					// Send message to confirm recovery email if it's not empty.
-					if (!empty($RecoveryEmail))
+				if (!$SkipEmailConfirmation) {
+					$bResult = true;
+					$oSentEx = null;
+					try
 					{
-						$bResult = $this->sendRecoveryEmailConfirmationMessage($RecoveryEmail, $sConfirmRecoveryEmailHash);
+						// Send message to confirm recovery email if it's not empty.
+						if (!empty($RecoveryEmail))
+						{
+							$bResult = $this->sendRecoveryEmailConfirmationMessage($RecoveryEmail, $sConfirmRecoveryEmailHash);
+						}
 					}
-				}
-				catch (\Exception $oEx)
-				{
-					$bResult = false;
-					$oSentEx = $oEx;
-				}
-				if (!$bResult)
-				{
-					$oUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sPrevConfirmRecoveryEmail;
-					$oUser->{self::GetName().'::RecoveryEmail'} = $sPrevRecoveryEmail;
-					\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
-				}
-				if ($oSentEx !== null)
-				{
-					throw $oSentEx;
+					catch (\Exception $oEx)
+					{
+						$bResult = false;
+						$oSentEx = $oEx;
+					}
+					if (!$bResult)
+					{
+						$oUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sPrevConfirmRecoveryEmail;
+						$oUser->{self::GetName().'::RecoveryEmail'} = $sPrevRecoveryEmail;
+						\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
+					}
+					if ($oSentEx !== null)
+					{
+						throw $oSentEx;
+					}
 				}
 				return $bResult ? $this->getStarredRecoveryEmail($oUser) : false;
 			}

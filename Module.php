@@ -47,7 +47,16 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		$oModuleManager = \Aurora\System\Api::GetModuleManager();
 		$sSiteName = $oModuleManager->getModuleConfigValue('Core', 'SiteName');
 		$sTheme = $oModuleManager->getModuleConfigValue('CoreWebclient', 'Theme');
-		$oUser = $this->getUserByHash($sHash, 'confirm-recovery-email');
+
+		$oUser = null;
+		try
+		{
+			$oUser = $this->getUserByHash($sHash, 'confirm-recovery-email');
+		}
+		catch (\Exception $oEx)
+		{
+			\Aurora\System\Api::LogException($oEx);
+		}
 		$ConfirmRecoveryEmailHeading = '';
 		$ConfirmRecoveryEmailInfo = '';
 		if ($oUser instanceof \Aurora\Modules\Core\Classes\User && $sHash === $oUser->{self::GetName().'::ConfirmRecoveryEmailHash'})

@@ -18,27 +18,27 @@
             </div>
           </div>
           <div class="row q-ml-sm q-mt-sm">
-            <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_EMAIL') }} </div>
+            <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_EMAIL') }}</div>
             <div class="col-5">
-                <q-input outlined dense class="bg-white" v-model="notificationEmail"/>
+              <q-input outlined dense class="bg-white" v-model="notificationEmail"/>
             </div>
           </div>
           <div class="row q-ml-sm q-mt-sm">
-            <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE') }} </div>
+            <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE') }}</div>
             <div class="col-5">
-              <q-select  flat
-                         outlined
-                         dense class="bg-white" v-model="notificationType"
-                         :options="notificationTypes" />
+              <q-select flat
+                        outlined
+                        dense class="bg-white" v-model="notificationType"
+                        :options="notificationTypes"/>
             </div>
           </div>
           <div class="row q-ml-sm">
-            <div class="col-10 text-caption q-my-sm" v-model="inscription">
+            <div class="col-10 text-caption q-my-sm">
               {{ inscription }}
             </div>
           </div>
           <div class="row q-mt-sm q-ml-sm" v-if="notificationType.value === 'smtp'">
-            <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_HOST') }} </div>
+            <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_HOST') }}</div>
             <div class="col-5">
               <q-input outlined dense class="bg-white" v-model="notificationHost"/>
             </div>
@@ -65,20 +65,23 @@
               </q-checkbox>
             </div>
             <div class="col-2 q-ml-sm">
-              <q-input outlined dense class="bg-white" :label="$t('COREWEBCLIENT.LABEL_LOGIN')" :disable="!notificationUseAuth" v-model="notificationLogin"/>
+              <q-input outlined dense class="bg-white" :label="$t('COREWEBCLIENT.LABEL_LOGIN')"
+                       :disable="!notificationUseAuth" v-model="notificationLogin"/>
             </div>
             <div class="col-2 q-ml-sm">
-              <q-input outlined dense class="bg-white" :label="$t('COREWEBCLIENT.LABEL_PASSWORD')" :disable="!notificationUseAuth" v-model="notificationPassword"/>
+              <q-input outlined dense class="bg-white" :label="$t('COREWEBCLIENT.LABEL_PASSWORD')"
+                       ref="oldPassword" type="password"
+                       :disable="!notificationUseAuth" v-model="notificationPassword"/>
             </div>
           </div>
         </q-card-section>
       </q-card>
       <div class="q-pt-md text-right">
         <q-btn unelevated no-caps dense class="q-px-sm" :ripple="false" color="primary"
-               :label="saving ? $t('COREWEBCLIENT.ACTION_SAVE_IN_PROGRESS') : $t('COREWEBCLIENT.ACTION_SAVE')" @click="save"/>
+               :label="saving ? $t('COREWEBCLIENT.ACTION_SAVE_IN_PROGRESS') : $t('COREWEBCLIENT.ACTION_SAVE')"
+               @click="save"/>
       </div>
     </div>
-    
     <UnsavedChangesDialog ref="unsavedChangesDialog"/>
   </q-scroll-area>
 </template>
@@ -86,26 +89,23 @@
 <script>
 
 import UnsavedChangesDialog from 'src/components/UnsavedChangesDialog'
-import settings from "../../../StandardResetPassword/vue/settings"
-import webApi from "../../../AdminPanelWebclient/vue/src/utils/web-api";
-import notification from "../../../AdminPanelWebclient/vue/src/utils/notification";
-import errors from "../../../AdminPanelWebclient/vue/src/utils/errors";
-import _ from "lodash";
+import settings from '../../../StandardResetPassword/vue/settings'
+import webApi from '../../../AdminPanelWebclient/vue/src/utils/web-api'
+import notification from '../../../AdminPanelWebclient/vue/src/utils/notification'
+import errors from '../../../AdminPanelWebclient/vue/src/utils/errors'
+import _ from 'lodash'
 
 export default {
-  name: "PasswordResetSettings",
+  name: 'PasswordResetSettings',
   components: {
     UnsavedChangesDialog
   },
-  data() {
+  data () {
     return {
       saving: false,
-      
-    
       notificationTypes: [],
       notificationType: '',
       inscription: '',
-      
       recoveryLinkLifetimeMinutes: 0,
       notificationEmail: '',
       notificationPort: 0,
@@ -114,6 +114,7 @@ export default {
       notificationUseAuth: false,
       notificationLogin: '',
       notificationPassword: '',
+      fakePass: '     ',
       hasNotificationPassword: false
     }
   },
@@ -124,7 +125,7 @@ export default {
       next()
     }
   },
-  mounted() {
+  mounted () {
     this.populate()
   },
   watch: {
@@ -137,10 +138,10 @@ export default {
         this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_ACCOUNT')
       }
     },
-    notificationUseSsl(val) {
+    notificationUseSsl (val) {
       if (val && this.notificationPort === 25) {
         this.notificationPort = 465
-      } else if (!val && this.notificationPort === 465){
+      } else if (!val && this.notificationPort === 465) {
         this.notificationPort = 25
       }
     }
@@ -149,16 +150,16 @@ export default {
     hasChanges () {
       const data = settings.getStandardResetPasswordSettings()
       return this.recoveryLinkLifetimeMinutes !== data.RecoveryLinkLifetimeMinutes ||
-      this.notificationEmail !== data.NotificationEmail ||
-      this.notificationPort !== data.NotificationPort ||
-      this.notificationHost !== data.NotificationHost ||
-      this.notificationUseSsl !== data.NotificationUseSsl ||
-      this.notificationUseAuth !== data.NotificationUseAuth ||
-      this.notificationLogin !== data.NotificationLogin ||
-      this.hasNotificationPassword !== data.HasNotificationPassword ||
-      this.notificationType.value !== data.NotificationType
+          this.notificationEmail !== data.NotificationEmail ||
+          this.notificationPort !== data.NotificationPort ||
+          this.notificationHost !== data.NotificationHost ||
+          this.notificationUseSsl !== data.NotificationUseSsl ||
+          this.notificationUseAuth !== data.NotificationUseAuth ||
+          this.notificationLogin !== data.NotificationLogin ||
+          this.hasNotificationPassword !== data.HasNotificationPassword ||
+          this.notificationType.value !== data.NotificationType
     },
-    populate() {
+    populate () {
       const data = settings.getStandardResetPasswordSettings()
       this.recoveryLinkLifetimeMinutes = data.RecoveryLinkLifetimeMinutes
       this.notificationEmail = data.NotificationEmail
@@ -168,21 +169,18 @@ export default {
       this.notificationUseAuth = data.NotificationUseAuth
       this.notificationLogin = data.NotificationLogin
       this.hasNotificationPassword = data.HasNotificationPassword
-      
-      let notificationType = data.NotificationType
- 
+      this.notificationPassword = this.hasNotificationPassword ? this.fakePass : ''
+      const notificationType = data.NotificationType
       this.notificationTypes = [
-        {value: 'mail', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_MAIL')},
-        {value: 'smtp', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_SMTP')},
-        {value: 'account', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_ACCOUNT')},
+        { value: 'mail', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_MAIL') },
+        { value: 'smtp', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_SMTP') },
+        { value: 'account', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_ACCOUNT') },
       ]
-      
       this.notificationTypes.forEach((type) => {
         if (type.value === notificationType) {
           this.notificationType = type
         }
       })
-      
       if (this.notificationType === 'smtp') {
         this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_SMTP')
       } else if (this.notificationType === 'mail') {
@@ -191,11 +189,11 @@ export default {
         this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_ACCOUNT')
       }
     },
-    save() {
+    save () {
       this.saving = true
       const parameters = {
         NotificationEmail: this.notificationEmail,
-        NotificationType:  this.notificationType.value,
+        NotificationType: this.notificationType.value,
         RecoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
       }
       if (this.notificationType.value === 'smtp') {
@@ -205,7 +203,11 @@ export default {
         parameters.NotificationUseAuth = this.notificationUseAuth
         if (this.notificationUseAuth) {
           parameters.NotificationLogin = this.notificationLogin
-          parameters.NotificationPassword = this.notificationPassword
+          if (this.notificationPassword !== this.fakePass) {
+            parameters.NotificationPassword = this.notificationPassword
+          }
+        } else {
+          parameters.NotificationUseAuth = this.notificationUseAuth
         }
       }
       webApi.sendRequest({
@@ -215,7 +217,17 @@ export default {
       }).then(result => {
         this.saving = false
         if (result) {
-          settings.saveStandardResetPasswordSettings(parameters)
+          settings.saveStandardResetPasswordSettings({
+            NotificationHost: this.notificationHost,
+            NotificationPort: this.notificationPort,
+            NotificationUseSsl: this.notificationUseSsl,
+            NotificationUseAuth: this.notificationUseAuth,
+            NotificationLogin: this.notificationLogin,
+            HasNotificationPassword: this.notificationPassword !== '' && this.notificationUseAuth,
+            NotificationEmail: this.notificationEmail,
+            NotificationType: this.notificationType.value,
+            RecoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
+          })
           notification.showReport(this.$t('COREWEBCLIENT.REPORT_SETTINGS_UPDATE_SUCCESS'))
           this.populate()
         } else {

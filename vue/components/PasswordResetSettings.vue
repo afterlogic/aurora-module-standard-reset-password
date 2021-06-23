@@ -12,10 +12,10 @@
               <q-input outlined dense class="bg-white" v-model="recoveryLinkLifetimeMinutes"/>
             </div>
           </div>
-          <div class="row q-ml-sm">
-            <div class="col-10 text-caption q-my-sm">
-              {{ $t('STANDARDRESETPASSWORD.HINT_RECOVERY_LINK_LIFETIME') }}
-            </div>
+          <div class="row q-ml-sm q-my-md">
+              <q-item-label caption>
+                <span class="" v-t="'STANDARDRESETPASSWORD.HINT_RECOVERY_LINK_LIFETIME'" />
+              </q-item-label>
           </div>
           <div class="row q-ml-sm q-mt-sm">
             <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_EMAIL') }}</div>
@@ -32,44 +32,40 @@
                         :options="notificationTypes"/>
             </div>
           </div>
-          <div class="row q-ml-sm">
-            <div class="col-10 text-caption q-my-sm">
-              {{ inscription }}
-            </div>
+          <div class="row q-ml-sm q-my-md">
+            <q-item-label caption>
+              <span>  {{ inscription }}</span>
+            </q-item-label>
           </div>
           <div class="row q-mt-sm q-ml-sm" v-if="notificationType.value === 'smtp'">
             <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_HOST') }}</div>
             <div class="col-5">
               <q-input outlined dense class="bg-white" v-model="notificationHost"/>
             </div>
-            <div class="col-2">
               <div class="row">
-                <div class="col-3 q-ma-sm">Port</div>
-                <div class="col-5">
+                <div class="col-2 q-ma-sm text-right" v-t="'MAILWEBCLIENT.LABEL_PORT'" />
+                <div class="col-2">
                   <q-input outlined dense class="bg-white" v-model="notificationPort"/>
                 </div>
+                <div class="col-2 q-pb-md  q-ml-sm">
+                  <q-checkbox v-model="notificationUseSsl" color="teal">
+                    <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_SSL') }}</q-item-label>
+                  </q-checkbox>
+                </div>
               </div>
-            </div>
-            <div class="col-2">
-              <div class="q-pb-md">
-                <q-checkbox v-model="notificationUseSsl" color="teal">
-                  <q-item-label caption>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_SSL') }}</q-item-label>
-                </q-checkbox>
-              </div>
-            </div>
           </div>
           <div class="row q-mt-sm" v-if="notificationType.value === 'smtp'">
             <div class="col-3">
               <q-checkbox v-model="notificationUseAuth" color="teal">
-                <q-item-label caption>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_AUTH') }}</q-item-label>
+                  <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_AUTH') }}</q-item-label>
               </q-checkbox>
             </div>
             <div class="col-2 q-ml-sm">
-              <q-input outlined dense class="bg-white" :label="$t('COREWEBCLIENT.LABEL_LOGIN')"
+              <q-input outlined dense class="bg-white" :placeholder="$t('COREWEBCLIENT.LABEL_LOGIN')"
                        :disable="!notificationUseAuth" v-model="notificationLogin"/>
             </div>
             <div class="col-2 q-ml-sm">
-              <q-input outlined dense class="bg-white" :label="$t('COREWEBCLIENT.LABEL_PASSWORD')"
+              <q-input outlined dense class="bg-white" :placeholder="$t('COREWEBCLIENT.LABEL_PASSWORD')"
                        ref="oldPassword" type="password"
                        :disable="!notificationUseAuth" v-model="notificationPassword"/>
             </div>
@@ -104,7 +100,7 @@ export default {
     return {
       saving: false,
       notificationTypes: [],
-      notificationType: '',
+      notificationType: {},
       inscription: '',
       recoveryLinkLifetimeMinutes: 0,
       notificationEmail: '',
@@ -129,14 +125,8 @@ export default {
     this.populate()
   },
   watch: {
-    'notificationType.value': function (val) {
-      if (val === 'smtp') {
-        this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_SMTP')
-      } else if (val === 'mail') {
-        this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_MAIL')
-      } else if (val === 'account') {
-        this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_ACCOUNT')
-      }
+    'notificationType.value': function () {
+      this.setInscription()
     },
     notificationUseSsl (val) {
       if (val && this.notificationPort === 25) {
@@ -181,13 +171,7 @@ export default {
           this.notificationType = type
         }
       })
-      if (this.notificationType === 'smtp') {
-        this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_SMTP')
-      } else if (this.notificationType === 'mail') {
-        this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_MAIL')
-      } else if (this.notificationType === 'account') {
-        this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_ACCOUNT')
-      }
+      this.setInscription()
     },
     save () {
       this.saving = true
@@ -237,6 +221,19 @@ export default {
         this.saving = false
         notification.showError(errors.getTextFromResponse(response, this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED')))
       })
+    },
+    setInscription () {
+      switch (this.notificationType?.value) {
+        case 'smtp':
+          this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_SMTP')
+          break
+        case 'mail':
+          this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_MAIL')
+          break
+        case 'account':
+          this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_ACCOUNT')
+          break
+      }
     }
   }
 }

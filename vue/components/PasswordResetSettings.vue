@@ -139,37 +139,33 @@ export default {
   methods: {
     hasChanges () {
       const data = settings.getStandardResetPasswordSettings()
-      return this.recoveryLinkLifetimeMinutes !== data.RecoveryLinkLifetimeMinutes ||
-          this.notificationEmail !== data.NotificationEmail ||
-          this.notificationPort !== data.NotificationPort ||
-          this.notificationHost !== data.NotificationHost ||
-          this.notificationUseSsl !== data.NotificationUseSsl ||
-          this.notificationUseAuth !== data.NotificationUseAuth ||
-          this.notificationLogin !== data.NotificationLogin ||
-          this.hasNotificationPassword !== data.HasNotificationPassword ||
-          this.notificationType.value !== data.NotificationType
+      return this.recoveryLinkLifetimeMinutes !== data.recoveryLinkLifetimeMinutes ||
+          this.notificationEmail !== data.notificationEmail ||
+          this.notificationPort !== data.notificationPort ||
+          this.notificationHost !== data.notificationHost ||
+          this.notificationUseSsl !== data.notificationUseSsl ||
+          this.notificationUseAuth !== data.notificationUseAuth ||
+          this.notificationLogin !== data.notificationLogin ||
+          this.hasNotificationPassword !== data.hasNotificationPassword ||
+          this.notificationType.value !== data.notificationType
     },
     populate () {
       const data = settings.getStandardResetPasswordSettings()
-      this.recoveryLinkLifetimeMinutes = data.RecoveryLinkLifetimeMinutes
-      this.notificationEmail = data.NotificationEmail
-      this.notificationPort = data.NotificationPort
-      this.notificationHost = data.NotificationHost
-      this.notificationUseSsl = data.NotificationUseSsl
-      this.notificationUseAuth = data.NotificationUseAuth
-      this.notificationLogin = data.NotificationLogin
-      this.hasNotificationPassword = data.HasNotificationPassword
-      const notificationType = data.NotificationType
+      this.recoveryLinkLifetimeMinutes = data.recoveryLinkLifetimeMinutes
+      this.notificationEmail = data.notificationEmail
+      this.notificationPort = data.notificationPort
+      this.notificationHost = data.notificationHost
+      this.notificationUseSsl = data.notificationUseSsl
+      this.notificationUseAuth = data.notificationUseAuth
+      this.notificationLogin = data.notificationLogin
+      this.hasNotificationPassword = data.hasNotificationPassword
+      const notificationType = data.notificationType
       this.notificationTypes = [
         { value: 'mail', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_MAIL') },
         { value: 'smtp', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_SMTP') },
         { value: 'account', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_ACCOUNT') },
       ]
-      this.notificationTypes.forEach((type) => {
-        if (type.value === notificationType) {
-          this.notificationType = type
-        }
-      })
+      this.notificationType = this.notificationTypes.find(type => type.value === notificationType)
       this.setInscription()
     },
     save () {
@@ -201,15 +197,15 @@ export default {
         this.saving = false
         if (result) {
           settings.saveStandardResetPasswordSettings({
-            NotificationHost: this.notificationHost,
-            NotificationPort: this.notificationPort,
-            NotificationUseSsl: this.notificationUseSsl,
-            NotificationUseAuth: this.notificationUseAuth,
-            NotificationLogin: this.notificationLogin,
-            HasNotificationPassword: this.notificationPassword !== '' && this.notificationUseAuth,
-            NotificationEmail: this.notificationEmail,
-            NotificationType: this.notificationType.value,
-            RecoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
+            notificationHost: this.notificationHost,
+            notificationPort: this.notificationPort,
+            notificationUseSsl: this.notificationUseSsl,
+            notificationUseAuth: this.notificationUseAuth,
+            notificationLogin: this.notificationLogin,
+            hasNotificationPassword: this.notificationPassword !== '' && this.notificationUseAuth,
+            notificationEmail: this.notificationEmail,
+            notificationType: this.notificationType.value,
+            recoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
           })
           this.savedPass = this.notificationPassword
           notification.showReport(this.$t('COREWEBCLIENT.REPORT_SETTINGS_UPDATE_SUCCESS'))

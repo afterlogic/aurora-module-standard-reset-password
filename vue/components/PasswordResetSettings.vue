@@ -89,6 +89,8 @@ import notification from '../../../AdminPanelWebclient/vue/src/utils/notificatio
 import errors from '../../../AdminPanelWebclient/vue/src/utils/errors'
 import _ from 'lodash'
 
+const FAKE_PASS = '     '
+
 export default {
   name: 'PasswordResetSettings',
   components: {
@@ -107,8 +109,8 @@ export default {
       notificationUseSsl: false,
       notificationUseAuth: false,
       notificationLogin: '',
-      notificationPassword: '',
-      fakePass: '     ',
+      notificationPassword: FAKE_PASS,
+      savedPass: FAKE_PASS,
       hasNotificationPassword: false
     }
   },
@@ -157,7 +159,6 @@ export default {
       this.notificationUseAuth = data.NotificationUseAuth
       this.notificationLogin = data.NotificationLogin
       this.hasNotificationPassword = data.HasNotificationPassword
-      this.notificationPassword = this.hasNotificationPassword ? this.fakePass : ''
       const notificationType = data.NotificationType
       this.notificationTypes = [
         { value: 'mail', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_MAIL') },
@@ -185,7 +186,7 @@ export default {
         parameters.NotificationUseAuth = this.notificationUseAuth
         if (this.notificationUseAuth) {
           parameters.NotificationLogin = this.notificationLogin
-          if (this.notificationPassword !== this.fakePass) {
+          if (this.notificationPassword !== FAKE_PASS) {
             parameters.NotificationPassword = this.notificationPassword
           }
         } else {
@@ -210,6 +211,7 @@ export default {
             NotificationType: this.notificationType.value,
             RecoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
           })
+          this.savedPass = this.notificationPassword
           notification.showReport(this.$t('COREWEBCLIENT.REPORT_SETTINGS_UPDATE_SUCCESS'))
           this.populate()
         } else {

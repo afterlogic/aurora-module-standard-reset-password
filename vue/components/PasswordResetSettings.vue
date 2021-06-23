@@ -42,17 +42,15 @@
             <div class="col-5">
               <q-input outlined dense class="bg-white" v-model="notificationHost"/>
             </div>
-              <div class="row">
-                <div class="col-2 q-ma-sm text-right" v-t="'MAILWEBCLIENT.LABEL_PORT'" />
-                <div class="col-2">
-                  <q-input outlined dense class="bg-white" v-model="notificationPort"/>
-                </div>
-                <div class="col-2 q-pb-md  q-ml-sm">
-                  <q-checkbox v-model="notificationUseSsl" color="teal">
-                    <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_SSL') }}</q-item-label>
-                  </q-checkbox>
-                </div>
-              </div>
+            <div class="col-1 q-ma-sm text-right" v-t="'MAILWEBCLIENT.LABEL_PORT'"/>
+            <div class="col-1">
+              <q-input outlined dense class="bg-white" v-model="notificationPort"/>
+            </div>
+            <div class="col-1 q-pb-md  q-ml-sm">
+              <q-checkbox v-model="notificationUseSsl" color="teal">
+                <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_SSL') }}</q-item-label>
+              </q-checkbox>
+            </div>
           </div>
           <div class="row q-mt-sm" v-if="notificationType.value === 'smtp'">
             <div class="col-3">

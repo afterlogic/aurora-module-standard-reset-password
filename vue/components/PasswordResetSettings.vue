@@ -169,54 +169,56 @@ export default {
       this.setInscription()
     },
     save () {
-      this.saving = true
-      const parameters = {
-        NotificationEmail: this.notificationEmail,
-        NotificationType: this.notificationType.value,
-        RecoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
-      }
-      if (this.notificationType.value === 'smtp') {
-        parameters.NotificationHost = this.notificationHost
-        parameters.NotificationPort = this.notificationPort
-        parameters.NotificationUseSsl = this.notificationUseSsl
-        parameters.NotificationUseAuth = this.notificationUseAuth
-        if (this.notificationUseAuth) {
-          parameters.NotificationLogin = this.notificationLogin
-          if (this.notificationPassword !== FAKE_PASS) {
-            parameters.NotificationPassword = this.notificationPassword
-          }
-        } else {
+      if (!this.saving) {
+        this.saving = true
+        const parameters = {
+          NotificationEmail: this.notificationEmail,
+          NotificationType: this.notificationType.value,
+          RecoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
+        }
+        if (this.notificationType.value === 'smtp') {
+          parameters.NotificationHost = this.notificationHost
+          parameters.NotificationPort = this.notificationPort
+          parameters.NotificationUseSsl = this.notificationUseSsl
           parameters.NotificationUseAuth = this.notificationUseAuth
+          if (this.notificationUseAuth) {
+            parameters.NotificationLogin = this.notificationLogin
+            if (this.notificationPassword !== FAKE_PASS) {
+              parameters.NotificationPassword = this.notificationPassword
+            }
+          } else {
+            parameters.NotificationUseAuth = this.notificationUseAuth
+          }
         }
+        webApi.sendRequest({
+          moduleName: 'StandardResetPassword',
+          methodName: 'UpdateAdminSettings',
+          parameters: parameters,
+        }).then(result => {
+          this.saving = false
+          if (result) {
+            settings.saveStandardResetPasswordSettings({
+              notificationHost: this.notificationHost,
+              notificationPort: this.notificationPort,
+              notificationUseSsl: this.notificationUseSsl,
+              notificationUseAuth: this.notificationUseAuth,
+              notificationLogin: this.notificationLogin,
+              hasNotificationPassword: this.notificationPassword !== '' && this.notificationUseAuth,
+              notificationEmail: this.notificationEmail,
+              notificationType: this.notificationType.value,
+              recoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
+            })
+            this.savedPass = this.notificationPassword
+            notification.showReport(this.$t('COREWEBCLIENT.REPORT_SETTINGS_UPDATE_SUCCESS'))
+            this.populate()
+          } else {
+            notification.showError(this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED'))
+          }
+        }, response => {
+          this.saving = false
+          notification.showError(errors.getTextFromResponse(response, this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED')))
+        })
       }
-      webApi.sendRequest({
-        moduleName: 'StandardResetPassword',
-        methodName: 'UpdateAdminSettings',
-        parameters: parameters,
-      }).then(result => {
-        this.saving = false
-        if (result) {
-          settings.saveStandardResetPasswordSettings({
-            notificationHost: this.notificationHost,
-            notificationPort: this.notificationPort,
-            notificationUseSsl: this.notificationUseSsl,
-            notificationUseAuth: this.notificationUseAuth,
-            notificationLogin: this.notificationLogin,
-            hasNotificationPassword: this.notificationPassword !== '' && this.notificationUseAuth,
-            notificationEmail: this.notificationEmail,
-            notificationType: this.notificationType.value,
-            recoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
-          })
-          this.savedPass = this.notificationPassword
-          notification.showReport(this.$t('COREWEBCLIENT.REPORT_SETTINGS_UPDATE_SUCCESS'))
-          this.populate()
-        } else {
-          notification.showError(this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED'))
-        }
-      }, response => {
-        this.saving = false
-        notification.showError(errors.getTextFromResponse(response, this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED')))
-      })
     },
     setInscription () {
       switch (this.notificationType?.value) {

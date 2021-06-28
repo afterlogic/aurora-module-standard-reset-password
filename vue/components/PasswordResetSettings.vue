@@ -1,30 +1,30 @@
 <template>
   <q-scroll-area class="full-height full-width">
-    <div class="q-pa-md">
+    <div class="q-pa-lg">
       <div class="row q-mb-md">
         <div class="col text-h5">{{ $t('STANDARDRESETPASSWORD.HEADING_SETTINGS_TAB') }}</div>
       </div>
       <q-card flat bordered class="card-edit-settings">
         <q-card-section>
-          <div class="row q-ml-sm">
-            <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_RECOVERY_LINK_LIFETIME_MINUTES') }}</div>
+          <div class="row">
+            <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_RECOVERY_LINK_LIFETIME_MINUTES') }}</div>
             <div class="col-5">
               <q-input outlined dense class="bg-white" v-model="recoveryLinkLifetimeMinutes"/>
             </div>
           </div>
-          <div class="row q-ml-sm q-my-md">
+          <div class="row q-my-md">
               <q-item-label caption>
                 <span class="" v-t="'STANDARDRESETPASSWORD.HINT_RECOVERY_LINK_LIFETIME'" />
               </q-item-label>
           </div>
-          <div class="row q-ml-sm q-mt-sm">
-            <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_EMAIL') }}</div>
+          <div class="row q-mt-sm">
+            <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_EMAIL') }}</div>
             <div class="col-5">
               <q-input outlined dense class="bg-white" v-model="notificationEmail"/>
             </div>
           </div>
-          <div class="row q-ml-sm q-mt-sm">
-            <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE') }}</div>
+          <div class="row q-mt-md">
+            <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE') }}</div>
             <div class="col-5">
               <q-select flat
                         outlined
@@ -32,13 +32,13 @@
                         :options="notificationTypes"/>
             </div>
           </div>
-          <div class="row q-ml-sm q-my-md">
+          <div class="row q-my-md">
             <q-item-label caption>
               <span>  {{ inscription }}</span>
             </q-item-label>
           </div>
-          <div class="row q-mt-sm q-ml-sm" v-if="notificationType.value === 'smtp'">
-            <div class="col-3 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_HOST') }}</div>
+          <div class="row q-mt-sm" v-if="notificationType.value === 'smtp'">
+            <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_HOST') }}</div>
             <div class="col-5">
               <q-input outlined dense class="bg-white" v-model="notificationHost"/>
             </div>
@@ -53,12 +53,12 @@
             </div>
           </div>
           <div class="row q-mt-sm" v-if="notificationType.value === 'smtp'">
-            <div class="col-3">
-              <q-checkbox v-model="notificationUseAuth" color="teal">
+            <div class="col-2 q-mt-sm">
+              <q-checkbox dense v-model="notificationUseAuth" color="teal">
                   <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_AUTH') }}</q-item-label>
               </q-checkbox>
             </div>
-            <div class="col-2 q-ml-sm">
+            <div class="col-2">
               <q-input outlined dense class="bg-white" :placeholder="$t('COREWEBCLIENT.LABEL_LOGIN')"
                        :disable="!notificationUseAuth" v-model="notificationLogin"/>
             </div>

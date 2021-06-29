@@ -47,14 +47,14 @@
               <q-input outlined dense class="bg-white" v-model="notificationPort"/>
             </div>
             <div class="col-1 q-pb-md  q-ml-sm">
-              <q-checkbox v-model="notificationUseSsl" color="teal">
+              <q-checkbox v-model="notificationUseSsl">
                 <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_SSL') }}</q-item-label>
               </q-checkbox>
             </div>
           </div>
           <div class="row q-mt-sm" v-if="notificationType.value === 'smtp'">
             <div class="col-2 q-mt-sm">
-              <q-checkbox dense v-model="notificationUseAuth" color="teal">
+              <q-checkbox dense v-model="notificationUseAuth">
                   <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_AUTH') }}</q-item-label>
               </q-checkbox>
             </div>

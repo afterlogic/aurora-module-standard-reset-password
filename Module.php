@@ -7,6 +7,8 @@
 
 namespace Aurora\Modules\StandardResetPassword;
 
+use Aurora\Modules\Core\Models\User;
+
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
@@ -24,15 +26,6 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	 */
 	public function init() 
 	{
-		$this->extendObject(
-			'Aurora\Modules\Core\Classes\User', 
-			array(
-				'RecoveryEmail' => array('string', ''),
-				'PasswordResetHash' => array('string', ''),
-				'ConfirmRecoveryEmailHash' => array('string', ''),
-			)
-		);
-		
 		$this->aErrors = [
 			Enums\ErrorCodes::WrongPassword => $this->i18N('ERROR_WRONG_PASSWORD'),
 		];
@@ -59,7 +52,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		}
 		$ConfirmRecoveryEmailHeading = '';
 		$ConfirmRecoveryEmailInfo = '';
-		if ($oUser instanceof \Aurora\Modules\Core\Classes\User && $sHash === $oUser->{self::GetName().'::ConfirmRecoveryEmailHash'})
+		if ($oUser instanceof User && $sHash === $oUser->{self::GetName().'::ConfirmRecoveryEmailHash'})
 		{
 			$ConfirmRecoveryEmailHeading = $this->i18N('HEADING_CONFIRM_EMAIL_RECOVERY_HASH');
 			$ConfirmRecoveryEmailInfo = \strtr($this->i18N('INFO_CONFIRM_EMAIL_RECOVERY_HASH'), [
@@ -71,7 +64,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			{
                 $oMin->DeleteMinByHash($sHash);
             }
-			$oUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = '';
+			$oUser->setExtendedProp(self::GetName().'::ConfirmRecoveryEmailHash', '');
 			$oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
 			$oCoreDecorator->UpdateUserObject($oUser);
 		}
@@ -143,10 +136,10 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
     {
 		$oAccount = null;
 		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($sEmail);
-		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
+		if ($oUser instanceof User)
 		{
 			$bPrevState = \Aurora\Api::skipCheckUserRole(true);
-			$oAccount = \Aurora\Modules\Mail\Module::Decorator()->GetAccountByEmail($sEmail, $oUser->EntityId);
+			$oAccount = \Aurora\Modules\Mail\Module::Decorator()->GetAccountByEmail($sEmail, $oUser->Id);
 			\Aurora\Api::skipCheckUserRole($bPrevState);
 		}
 		return $oAccount;
@@ -367,14 +360,14 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	
 	/**
 	 * Get recovery email address partly replaced with stars.
-	 * @param \Aurora\Modules\Core\Classes\User $oUser
+	 * @param \Aurora\Modules\Core\Models\User $oUser
 	 * @return string
 	 */
 	protected function getStarredRecoveryEmail($oUser)
 	{
 		$sResult = '';
 
-		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
+		if ($oUser instanceof User)
 		{
 			$sRecoveryEmail = $oUser->{self::GetName().'::RecoveryEmail'};
 			if (!empty($sRecoveryEmail))
@@ -413,7 +406,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		];
 
 		$oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
-		if ($oAuthenticatedUser instanceof \Aurora\Modules\Core\Classes\User)
+		if ($oAuthenticatedUser instanceof User)
         {
             if ($oAuthenticatedUser->isNormalOrTenant())
             {
@@ -455,9 +448,9 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		}
 
 		$oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
-		if ($oAuthenticatedUser instanceof \Aurora\Modules\Core\Classes\User && $oAuthenticatedUser->isNormalOrTenant())
+		if ($oAuthenticatedUser instanceof User && $oAuthenticatedUser->isNormalOrTenant())
 		{
-			$oAccount = \Aurora\Modules\Mail\Module::Decorator()->GetAccountByEmail($oAuthenticatedUser->PublicId, $oAuthenticatedUser->EntityId);
+			$oAccount = \Aurora\Modules\Mail\Module::Decorator()->GetAccountByEmail($oAuthenticatedUser->PublicId, $oAuthenticatedUser->Id);
 			$sAccountPassword = $oAccount ? $oAccount->getPassword() : null;
 			if ($Password === null || $sAccountPassword !== $Password)
 			{
@@ -466,9 +459,9 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			
 			$sPrevRecoveryEmail = $oAuthenticatedUser->{self::GetName().'::RecoveryEmail'};
 			$sPrevConfirmRecoveryEmail = $oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmail'};
-			$sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oAuthenticatedUser->EntityId, 'confirm-recovery-email', __FUNCTION__) : '';
-			$oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sConfirmRecoveryEmailHash;
-			$oAuthenticatedUser->{self::GetName().'::RecoveryEmail'} = $RecoveryEmail;
+			$sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oAuthenticatedUser->Id, 'confirm-recovery-email', __FUNCTION__) : '';
+			$oAuthenticatedUser->setExtendedProp(self::GetName().'::ConfirmRecoveryEmailHash',  $sConfirmRecoveryEmailHash);
+			$oAuthenticatedUser->setExtendedProp(self::GetName().'::RecoveryEmail', $RecoveryEmail);
 			if (\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oAuthenticatedUser))
 			{
 				$bResult = true;
@@ -488,8 +481,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 				}
 				if (!$bResult)
 				{
-					$oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sPrevConfirmRecoveryEmail;
-					$oAuthenticatedUser->{self::GetName().'::RecoveryEmail'} = $sPrevRecoveryEmail;
+					$oAuthenticatedUser->setExtendedProp(self::GetName().'::ConfirmRecoveryEmailHash', $sPrevConfirmRecoveryEmail);
+					$oAuthenticatedUser->setExtendedProp(self::GetName().'::RecoveryEmail', $sPrevRecoveryEmail);
 					\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oAuthenticatedUser);
 				}
 				if ($oSentEx !== null)
@@ -550,13 +543,13 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 
 		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
 
-		if ($oUser instanceof \Aurora\Modules\Core\Classes\User && $oUser->isNormalOrTenant())
+		if ($oUser instanceof User && $oUser->isNormalOrTenant())
 		{
 			$sPrevRecoveryEmail = $oUser->{self::GetName().'::RecoveryEmail'};
 			$sPrevConfirmRecoveryEmail = $oUser->{self::GetName().'::ConfirmRecoveryEmail'};
-			$sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oUser->EntityId, 'confirm-recovery-email', __FUNCTION__) : '';
-			$oUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = !$SkipEmailConfirmation ? !$sConfirmRecoveryEmailHash : '';
-			$oUser->{self::GetName().'::RecoveryEmail'} = $RecoveryEmail;
+			$sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oUser->Id, 'confirm-recovery-email', __FUNCTION__) : '';
+			$oUser->setExtendedProp(self::GetName().'::ConfirmRecoveryEmailHash', !$SkipEmailConfirmation ? !$sConfirmRecoveryEmailHash : '');
+			$oUser->setExtendedProp(self::GetName().'::RecoveryEmail', $RecoveryEmail);
 			if (\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser))
 			{
 				$bResult = true;
@@ -578,8 +571,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 					}
 					if (!$bResult)
 					{
-						$oUser->{self::GetName().'::ConfirmRecoveryEmailHash'} = $sPrevConfirmRecoveryEmail;
-						$oUser->{self::GetName().'::RecoveryEmail'} = $sPrevRecoveryEmail;
+						$oUser->setExtendedProp(self::GetName().'::ConfirmRecoveryEmailHash', $sPrevConfirmRecoveryEmail);
+						$oUser->setExtendedProp(self::GetName().'::RecoveryEmail', $sPrevRecoveryEmail);
 						\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
 					}
 					if ($oSentEx !== null)
@@ -624,11 +617,11 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	public function SendPasswordResetEmail($UserPublicId)
 	{
 		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
-		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
+		if ($oUser instanceof User)
 		{
 			$bPrevState = \Aurora\Api::skipCheckUserRole(true);
-			$sPasswordResetHash = $this->generateHash($oUser->EntityId, 'reset-password', __FUNCTION__);
-			$oUser->{self::GetName().'::PasswordResetHash'} = $sPasswordResetHash;
+			$sPasswordResetHash = $this->generateHash($oUser->Id, 'reset-password', __FUNCTION__);
+			$oUser->setExtendedProp(self::GetName().'::PasswordResetHash', $sPasswordResetHash);
 			\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
 			\Aurora\Api::skipCheckUserRole($bPrevState);
 
@@ -655,7 +648,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		
 		$oUser = $this->getUserByHash($Hash, 'reset-password');
 
-		if ($oUser instanceof \Aurora\Modules\Core\Classes\User)
+		if ($oUser instanceof User)
 		{
 			return $oUser->PublicId;
 		}
@@ -682,7 +675,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oAccount = null;
         if (!empty($oMail) && !empty($oUser))
 		{
-            $aAccounts = $oMail->GetAccounts($oUser->EntityId);
+            $aAccounts = $oMail->GetAccounts($oUser->Id);
             $oAccount = reset($aAccounts);
         }
 
@@ -708,7 +701,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             if ($mResult && !empty($oMin) && !empty($Hash))
 			{
                 $oMin->DeleteMinByHash($Hash);
-				\Aurora\System\Api::UserSession()->DeleteAllUserSessions($oUser->EntityId);
+				\Aurora\System\Api::UserSession()->DeleteAllUserSessions($oUser->Id);
             }
         }
         else

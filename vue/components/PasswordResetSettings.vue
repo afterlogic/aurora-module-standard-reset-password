@@ -64,7 +64,7 @@
             </div>
             <div class="col-2 q-ml-sm">
               <q-input outlined dense class="bg-white" :placeholder="$t('COREWEBCLIENT.LABEL_PASSWORD')"
-                       ref="oldPassword" type="password"
+                       ref="oldPassword" type="password" autocomplete="new-password"
                        :disable="!notificationUseAuth" v-model="notificationPassword"/>
             </div>
           </div>

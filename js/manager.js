@@ -72,11 +72,29 @@ module.exports = function (oAppData) {
 	{
 		return {
 			start: function (ModulesManager) {
-				ModulesManager.run('SettingsWebclient', 'registerSettingsTab', [
-					function () { return require('modules/%ModuleName%/js/views/ResetPasswordSettingsFormView.js'); }, 
-					Settings.HashModuleName, 
-					TextUtils.i18n('%MODULENAME%/LABEL_SETTINGS_TAB')
-				]);
+				if (ModulesManager.isModuleEnabled('SecuritySettingsWebclient'))
+				{
+					ModulesManager.run(
+						'SecuritySettingsWebclient',
+						'registerSecuritySettingsSection', 
+						[
+							function () {
+								var oResetPasswordSettingsFormView = require('modules/%ModuleName%/js/views/ResetPasswordSettingsFormView.js');
+								oResetPasswordSettingsFormView.ViewTemplate = '%ModuleName%_ResetPasswordSettingsSectionFormView';
+								return oResetPasswordSettingsFormView;
+							},
+							'%ModuleName%'
+						]
+					);
+				}
+				else
+				{
+					ModulesManager.run('SettingsWebclient', 'registerSettingsTab', [
+						function () { return require('modules/%ModuleName%/js/views/ResetPasswordSettingsFormView.js'); },
+						Settings.HashModuleName, 
+						TextUtils.i18n('%MODULENAME%/LABEL_SETTINGS_TAB')
+					]);
+				}
 			}
 		};
 	}

@@ -9,7 +9,7 @@
           <div class="row">
             <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_RECOVERY_LINK_LIFETIME_MINUTES') }}</div>
             <div class="col-5">
-              <q-input outlined dense class="bg-white" v-model="recoveryLinkLifetimeMinutes"/>
+              <q-input outlined dense bg-color="white" v-model="recoveryLinkLifetimeMinutes"/>
             </div>
           </div>
           <div class="row q-my-md">
@@ -20,7 +20,7 @@
           <div class="row q-mt-sm">
             <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_EMAIL') }}</div>
             <div class="col-5">
-              <q-input outlined dense class="bg-white" v-model="notificationEmail"/>
+              <q-input outlined dense bg-color="white" v-model="notificationEmail"/>
             </div>
           </div>
           <div class="row q-mt-md">
@@ -28,7 +28,7 @@
             <div class="col-5">
               <q-select flat
                         outlined
-                        dense class="bg-white" v-model="notificationType"
+                        dense bg-color="white" v-model="notificationType"
                         :options="notificationTypes"/>
             </div>
           </div>

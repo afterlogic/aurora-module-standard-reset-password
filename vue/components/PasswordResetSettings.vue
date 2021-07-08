@@ -40,11 +40,11 @@
           <div class="row q-mt-sm" v-if="notificationType.value === 'smtp'">
             <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_HOST') }}</div>
             <div class="col-5">
-              <q-input outlined dense class="bg-white" v-model="notificationHost"/>
+              <q-input outlined dense bg-color="white" v-model="notificationHost"/>
             </div>
             <div class="col-1 q-ma-sm text-right" v-t="'MAILWEBCLIENT.LABEL_PORT'"/>
             <div class="col-1">
-              <q-input outlined dense class="bg-white" v-model="notificationPort"/>
+              <q-input outlined dense bg-color="white" v-model="notificationPort"/>
             </div>
             <div class="col-1 q-pb-md  q-ml-sm">
               <q-checkbox v-model="notificationUseSsl">
@@ -63,7 +63,7 @@
                        :disable="!notificationUseAuth" v-model="notificationLogin"/>
             </div>
             <div class="col-2 q-ml-sm">
-              <q-input outlined dense class="bg-white" :placeholder="$t('COREWEBCLIENT.LABEL_PASSWORD')"
+              <q-input outlined dense bg-color="white" :placeholder="$t('COREWEBCLIENT.LABEL_PASSWORD')"
                        ref="oldPassword" type="password" autocomplete="new-password"
                        :disable="!notificationUseAuth" v-model="notificationPassword"/>
             </div>

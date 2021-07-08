@@ -59,7 +59,7 @@
               </q-checkbox>
             </div>
             <div class="col-2">
-              <q-input outlined dense class="bg-white" :placeholder="$t('COREWEBCLIENT.LABEL_LOGIN')"
+              <q-input outlined dense bg-color="white" :placeholder="$t('COREWEBCLIENT.LABEL_LOGIN')"
                        :disable="!notificationUseAuth" v-model="notificationLogin"/>
             </div>
             <div class="col-2 q-ml-sm">

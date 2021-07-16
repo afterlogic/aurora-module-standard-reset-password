@@ -76,26 +76,21 @@
                @click="save"/>
       </div>
     </div>
-    <UnsavedChangesDialog ref="unsavedChangesDialog"/>
   </q-scroll-area>
 </template>
 
 <script>
+import errors from 'src/utils/errors'
+import notification from 'src/utils/notification'
+import webApi from 'src/utils/web-api'
 
-import UnsavedChangesDialog from 'src/components/UnsavedChangesDialog'
-import settings from '../../../StandardResetPassword/vue/settings'
-import webApi from '../../../AdminPanelWebclient/vue/src/utils/web-api'
-import notification from '../../../AdminPanelWebclient/vue/src/utils/notification'
-import errors from '../../../AdminPanelWebclient/vue/src/utils/errors'
-import _ from 'lodash'
+import settings from '../settings'
 
 const FAKE_PASS = '     '
 
 export default {
   name: 'PasswordResetSettings',
-  components: {
-    UnsavedChangesDialog
-  },
+
   data () {
     return {
       saving: false,
@@ -114,16 +109,15 @@ export default {
       hasNotificationPassword: false
     }
   },
+
   beforeRouteLeave (to, from, next) {
-    if (this.hasChanges() && _.isFunction(this?.$refs?.unsavedChangesDialog?.openConfirmDiscardChangesDialog)) {
-      this.$refs.unsavedChangesDialog.openConfirmDiscardChangesDialog(next)
-    } else {
-      next()
-    }
+    this.doBeforeRouteLeave(to, from, next)
   },
+
   mounted () {
     this.populate()
   },
+
   watch: {
     'notificationType.value': function () {
       this.setInscription()
@@ -136,7 +130,11 @@ export default {
       }
     }
   },
+
   methods: {
+    /**
+     * Method is used in doBeforeRouteLeave mixin
+     */
     hasChanges () {
       const data = settings.getStandardResetPasswordSettings()
       return this.recoveryLinkLifetimeMinutes !== data.recoveryLinkLifetimeMinutes ||
@@ -149,6 +147,16 @@ export default {
           this.hasNotificationPassword !== data.hasNotificationPassword ||
           this.notificationType.value !== data.notificationType
     },
+
+    /**
+     * Method is used in doBeforeRouteLeave mixin,
+     * do not use async methods - just simple and plain reverting of values
+     * !! hasChanges method must return true after executing revertChanges method
+     */
+    revertChanges () {
+      this.populate()
+    },
+
     populate () {
       const data = settings.getStandardResetPasswordSettings()
       this.recoveryLinkLifetimeMinutes = data.recoveryLinkLifetimeMinutes

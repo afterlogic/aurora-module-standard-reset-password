@@ -26,6 +26,15 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	 */
 	public function init() 
 	{
+		$this->extendObject(
+			'Aurora\Modules\Core\Classes\User', 
+			array(
+				'RecoveryEmail' => array('string', ''),
+				'PasswordResetHash' => array('string', ''),
+				'ConfirmRecoveryEmailHash' => array('string', ''),
+			)
+		);
+
 		$this->aErrors = [
 			Enums\ErrorCodes::WrongPassword => $this->i18N('ERROR_WRONG_PASSWORD'),
 		];

@@ -8,6 +8,7 @@
 namespace Aurora\Modules\StandardResetPassword;
 
 use Aurora\Modules\Core\Models\User;
+use Aurora\System\Application;
 
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
@@ -91,7 +92,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			'{{ConfirmRecoveryEmailHeading}}' => $ConfirmRecoveryEmailHeading,
 			'{{ConfirmRecoveryEmailInfo}}' => $ConfirmRecoveryEmailInfo,
 			'{{ActionOpenApp}}' => \strtr($this->i18N('ACTION_OPEN_SITENAME'), ['%SITE_NAME%' => $sSiteName]),
-			'{{OpenAppUrl}}' => $this->oHttp->GetFullUrl(),
+			'{{OpenAppUrl}}' => Application::getBaseUrl(),
 		));
 	}
 
@@ -278,7 +279,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			$sGreeting = $this->i18N('LABEL_MESSAGE_GREETING');
 			$sMessage = \strtr($this->i18N('LABEL_RESET_PASSWORD_MESSAGE'), [
 				'%SITE_NAME%' => $sSiteName,
-				'%RESET_PASSWORD_URL%' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '/#reset-password/' . $sHash,
+				'%RESET_PASSWORD_URL%' => \rtrim(Application::getBaseUrl(), '\\/ ') . '/#reset-password/' . $sHash,
 			]);
 			$sSignature = \strtr($this->i18N('LABEL_MESSAGE_SIGNATURE'), ['%SITE_NAME%' => $sSiteName]);
             $sBody = \strtr($sBody, array(
@@ -310,7 +311,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			$sMessage = \strtr($this->i18N('LABEL_CONFIRM_EMAIL_MESSAGE'), [
 				'%RECOVERY_EMAIL%' => $sRecipientEmail,
 				'%SITE_NAME%' => $sSiteName,
-				'%RESET_PASSWORD_URL%' => \rtrim($this->oHttp->GetFullUrl(), '\\/ ') . '?/confirm-recovery-email/' . $sHash,
+				'%RESET_PASSWORD_URL%' => \rtrim(Application::getBaseUrl(), '\\/ ') . '?/confirm-recovery-email/' . $sHash,
 			]);
 			$sSignature = \strtr($this->i18N('LABEL_MESSAGE_SIGNATURE'), ['%SITE_NAME%' => $sSiteName]);
             $sBody = \strtr($sBody, array(

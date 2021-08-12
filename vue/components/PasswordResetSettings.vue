@@ -63,11 +63,8 @@
                        :disable="!notificationUseAuth" v-model="notificationLogin"/>
             </div>
             <div class="col-2 q-ml-sm">
-              <!-- fake fields are a workaround to prevent auto-filling and saving passwords in Firefox -->
-              <input style="display:none" type="text" name="fakeusernameremembered"/>
-              <input style="display:none" type="password" name="fakepasswordremembered"/>
               <q-input outlined dense bg-color="white" :placeholder="$t('COREWEBCLIENT.LABEL_PASSWORD')"
-                       type="password" autocomplete="off"
+                       type="password" autocomplete="new-password"
                        :disable="!notificationUseAuth" v-model="notificationPassword"/>
             </div>
           </div>

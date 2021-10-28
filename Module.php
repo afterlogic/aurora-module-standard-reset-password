@@ -608,12 +608,15 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	 */
 	public function GetStarredRecoveryEmailAddress($UserPublicId)
 	{
+		$sRecoveryEmail = '';
 		$oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
-		$sRecoveryEmail = $this->getStarredRecoveryEmail($oUser);
-		$sConfirmRecoveryEmailHash = $oUser->{self::GetName().'::ConfirmRecoveryEmailHash'};
-		if  (!empty($sConfirmRecoveryEmailHash)) // email is not confirmed
-		{
-			$sRecoveryEmail = '';
+		if ($oUser) {
+			$sRecoveryEmail = $this->getStarredRecoveryEmail($oUser);
+			$sConfirmRecoveryEmailHash = $oUser->{self::GetName().'::ConfirmRecoveryEmailHash'};
+			if  (!empty($sConfirmRecoveryEmailHash)) // email is not confirmed
+			{
+				$sRecoveryEmail = '';
+			}
 		}
 		return $sRecoveryEmail;
 	}

@@ -7,6 +7,7 @@
 
 namespace Aurora\Modules\StandardResetPassword;
 
+use PHPMailer\PHPMailer\PHPMailer;
 use Aurora\Modules\Core\Models\User;
 use Aurora\System\Application;
 
@@ -204,10 +205,12 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	 */
 	protected function sendMessage($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName)
     {
-        $oMail = new \PHPMailer();
+		$bResult = false;
 
-        $sFrom = $this->getConfig('NotificationEmail', '');
-        $sType = \strtolower($this->getConfig('NotificationType', 'mail'));
+		$oMail = new PHPMailer();
+
+		$sFrom = $this->getConfig('NotificationEmail', '');
+		$sType = \strtolower($this->getConfig('NotificationType', 'mail'));
 		switch ($sType)
 		{
 			case 'mail':
@@ -236,19 +239,18 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 				break;
 		}
 
-        $oMail->setFrom($sFrom);
-        $oMail->addAddress($sRecipientEmail);
-        $oMail->addReplyTo($sFrom, $sSiteName);
+		$oMail->setFrom($sFrom);
+		$oMail->addAddress($sRecipientEmail);
+		$oMail->addReplyTo($sFrom, $sSiteName);
 
-        $oMail->Subject = $sSubject;
-        $oMail->Body = $sBody;
-        $oMail->isHTML($bIsHtmlBody);
+		$oMail->Subject = $sSubject;
+		$oMail->Body = $sBody;
+		$oMail->isHTML($bIsHtmlBody);
 
-		$bResult = false;
-        try
+		try
 		{
-            $bResult = $oMail->send();
-        }
+			$bResult = $oMail->send();
+		}
 		catch (\Exception $oEx)
 		{
 			\Aurora\System\Api::LogException($oEx);
@@ -259,6 +261,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			\Aurora\System\Api::Log("Message could not be sent. Mailer Error: {$oMail->ErrorInfo}");
 			throw new \Exception($oMail->ErrorInfo);
 		}
+
 		return $bResult;
 	}
 	

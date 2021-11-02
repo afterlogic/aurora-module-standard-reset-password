@@ -265,6 +265,10 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		return $bResult;
 	}
 	
+	protected function getHashModuleName()
+    {
+		return $this->getConfig('HashModuleName', 'reset-password');
+	}
 	/**
 	 * Sends password reset message.
 	 * @param string $sRecipientEmail
@@ -282,7 +286,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			$sGreeting = $this->i18N('LABEL_MESSAGE_GREETING');
 			$sMessage = \strtr($this->i18N('LABEL_RESET_PASSWORD_MESSAGE'), [
 				'%SITE_NAME%' => $sSiteName,
-				'%RESET_PASSWORD_URL%' => \rtrim(Application::getBaseUrl(), '\\/ ') . '/#reset-password/' . $sHash,
+				'%RESET_PASSWORD_URL%' => \rtrim(Application::getBaseUrl(), '\\/ ') . '/#' . $this->getHashModuleName() . '/' . $sHash,
 			]);
 			$sSignature = \strtr($this->i18N('LABEL_MESSAGE_SIGNATURE'), ['%SITE_NAME%' => $sSiteName]);
             $sBody = \strtr($sBody, array(
@@ -413,7 +417,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 		
 		$aSettings = [
-			'HashModuleName' => $this->getConfig('HashModuleName', 'login'),
+			'HashModuleName' => $this->getConfig('HashModuleName', 'reset-password'),
 			'CustomLogoUrl' => $this->getConfig('CustomLogoUrl', ''),
 			'BottomInfoHtmlText' => $this->getConfig('BottomInfoHtmlText', ''),
 		];
@@ -636,7 +640,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		if ($oUser instanceof User)
 		{
 			$bPrevState = \Aurora\Api::skipCheckUserRole(true);
-			$sPasswordResetHash = $this->generateHash($oUser->Id, 'reset-password', __FUNCTION__);
+			$sHashModuleName = $this->getConfig('HashModuleName', 'reset-password');
+			$sPasswordResetHash = $this->generateHash($oUser->Id, $this->getHashModuleName(), __FUNCTION__);
 			$oUser->setExtendedProp(self::GetName().'::PasswordResetHash', $sPasswordResetHash);
 			\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
 			\Aurora\Api::skipCheckUserRole($bPrevState);
@@ -662,7 +667,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	{
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 		
-		$oUser = $this->getUserByHash($Hash, 'reset-password');
+		$oUser = $this->getUserByHash($Hash, $this->getHashModuleName());
 
 		if ($oUser instanceof User)
 		{
@@ -685,7 +690,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oMail = \Aurora\Modules\Mail\Module::Decorator();
         $oMin = \Aurora\Modules\Min\Module::Decorator();
 
-        $oUser = $this->getUserByHash($Hash, 'reset-password', true);
+        $oUser = $this->getUserByHash($Hash, $this->getHashModuleName(), true);
 
         $mResult = false;
         $oAccount = null;

@@ -700,7 +700,6 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             $oAccount = reset($aAccounts);
         }
 
-
         if (!empty($oUser) && !empty($oAccount) && !empty($NewPassword))
         {
 			$aArgs = [
@@ -723,6 +722,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			{
                 $oMin->DeleteMinByHash($Hash);
 				\Aurora\System\Api::UserSession()->DeleteAllUserSessions($oUser->Id);
+				$oUser->TokensValidFromTimestamp = time();
+				$oUser->save();
             }
         }
         else

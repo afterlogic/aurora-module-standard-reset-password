@@ -13,10 +13,10 @@ export default {
     return [
       {
         tabName: 'reset-password',
-        title: 'STANDARDRESETPASSWORD.LABEL_SETTINGS_TAB',
-        component() {
-          return import('./components/PasswordResetSettings')
-        },
+        tabTitle: 'STANDARDRESETPASSWORD.LABEL_SETTINGS_TAB',
+        tabRouteChildren: [
+          { path: 'reset-password', component: () => import('./components/PasswordResetSettings') },
+        ],
       },
     ]
   },

@@ -1,58 +1,114 @@
 {
-	"Disabled": [
-		false,
-		"bool"
-	],
-    "IncludeInMobile": [
-		true,
-		"bool"
-	],
-    "HashModuleName": [
-		"reset-password",
-		"string"
-	],
-    "RecoveryLinkLifetimeMinutes": [
-        15,
-        "int"
-    ],
-    "NotificationType": [
-        "mail",
-        "string"
-    ],
-    "NotificationEmail": [
-        "",
-        "string"
-    ],
-    "NotificationHost": [
-        "",
-        "string"
-    ],
-    "NotificationPort": [
-        25,
-        "int"
-    ],
-    "NotificationUseSsl": [
-        false,
-        "bool"
-    ],
-    "NotificationUseAuth": [
-        false,
-        "bool"
-    ],
-    "NotificationLogin": [
-        "",
-        "string"
-    ],
-    "NotificationPassword": [
-        "",
-        "string"
-    ],
-    "CustomLogoUrl": [
-		"",
-		"string"
-	],
-    "BottomInfoHtmlText": [
-		"",
-		"string"
-	]
+  "Disabled": [
+    false,
+    "bool"
+  ],
+  "Disabled_Description": [
+    "",
+    "string"
+  ],
+  "IncludeInMobile": [
+    true,
+    "bool"
+  ],
+  "IncludeInMobile_Description": [
+    "",
+    "string"
+  ],
+  "HashModuleName": [
+    "reset-password",
+    "string"
+  ],
+  "HashModuleName_Description": [
+    "",
+    "string"
+  ],
+  "RecoveryLinkLifetimeMinutes": [
+    15,
+    "int"
+  ],
+  "RecoveryLinkLifetimeMinutes_Description": [
+    "",
+    "string"
+  ],
+  "NotificationType": [
+    "mail",
+    "string"
+  ],
+  "NotificationType_Description": [
+    "",
+    "string"
+  ],
+  "NotificationEmail": [
+    "",
+    "string"
+  ],
+  "NotificationEmail_Description": [
+    "",
+    "string"
+  ],
+  "NotificationHost": [
+    "",
+    "string"
+  ],
+  "NotificationHost_Description": [
+    "",
+    "string"
+  ],
+  "NotificationPort": [
+    25,
+    "int"
+  ],
+  "NotificationPort_Description": [
+    "",
+    "string"
+  ],
+  "NotificationUseSsl": [
+    false,
+    "bool"
+  ],
+  "NotificationUseSsl_Description": [
+    "",
+    "string"
+  ],
+  "NotificationUseAuth": [
+    false,
+    "bool"
+  ],
+  "NotificationUseAuth_Description": [
+    "",
+    "string"
+  ],
+  "NotificationLogin": [
+    "",
+    "string"
+  ],
+  "NotificationLogin_Description": [
+    "",
+    "string"
+  ],
+  "NotificationPassword": [
+    "",
+    "string"
+  ],
+  "NotificationPassword_Description": [
+    "",
+    "string"
+  ],
+  "CustomLogoUrl": [
+    "",
+    "string"
+  ],
+  "CustomLogoUrl_Description": [
+    "",
+    "string"
+  ],
+  "BottomInfoHtmlText": [
+    "",
+    "string"
+  ],
+  "BottomInfoHtmlText_Description": [
+    "",
+    "string"
+  ]
 }

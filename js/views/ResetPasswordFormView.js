@@ -31,6 +31,8 @@ function CResetPasswordFormView()
 {
 	CAbstractScreenView.call(this, '%ModuleName%');
 	
+	this.sResetPasswordHash = '#' + Settings.HashModuleName;
+	
 	this.sCustomLogoUrl = Settings.CustomLogoUrl;
 	this.sBottomInfoHtmlText = Settings.BottomInfoHtmlText;
 	
@@ -170,6 +172,11 @@ CResetPasswordFormView.prototype.backToStep1 = function ()
 	this.sendRecoveryEmailText('');
 	this.step(1);
 	this.emailFocus(true);
+};
+
+CResetPasswordFormView.prototype.backToStepLogin = function ()
+{
+	Routing.setHash('');
 };
 
 CResetPasswordFormView.prototype.sendRecoveryEmail = function ()

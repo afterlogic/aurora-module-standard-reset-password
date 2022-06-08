@@ -7,6 +7,7 @@
 
 namespace Aurora\Modules\StandardResetPassword;
 
+use PHPMailer\PHPMailer\PHPMailer;
 use Aurora\Modules\Core\Models\User;
 use Aurora\System\Application;
 
@@ -204,10 +205,12 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	 */
 	protected function sendMessage($sRecipientEmail, $sSubject, $sBody, $bIsHtmlBody, $sSiteName)
     {
-        $oMail = new \PHPMailer();
+		$bResult = false;
 
-        $sFrom = $this->getConfig('NotificationEmail', '');
-        $sType = \strtolower($this->getConfig('NotificationType', 'mail'));
+		$oMail = new PHPMailer();
+
+		$sFrom = $this->getConfig('NotificationEmail', '');
+		$sType = \strtolower($this->getConfig('NotificationType', 'mail'));
 		switch ($sType)
 		{
 			case 'mail':
@@ -236,19 +239,18 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 				break;
 		}
 
-        $oMail->setFrom($sFrom);
-        $oMail->addAddress($sRecipientEmail);
-        $oMail->addReplyTo($sFrom, $sSiteName);
+		$oMail->setFrom($sFrom);
+		$oMail->addAddress($sRecipientEmail);
+		$oMail->addReplyTo($sFrom, $sSiteName);
 
-        $oMail->Subject = $sSubject;
-        $oMail->Body = $sBody;
-        $oMail->isHTML($bIsHtmlBody);
+		$oMail->Subject = $sSubject;
+		$oMail->Body = $sBody;
+		$oMail->isHTML($bIsHtmlBody);
 
-		$bResult = false;
-        try
+		try
 		{
-            $bResult = $oMail->send();
-        }
+			$bResult = $oMail->send();
+		}
 		catch (\Exception $oEx)
 		{
 			\Aurora\System\Api::LogException($oEx);
@@ -259,9 +261,14 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			\Aurora\System\Api::Log("Message could not be sent. Mailer Error: {$oMail->ErrorInfo}");
 			throw new \Exception($oMail->ErrorInfo);
 		}
+
 		return $bResult;
 	}
 	
+	protected function getHashModuleName()
+    {
+		return $this->getConfig('HashModuleName', 'reset-password');
+	}
 	/**
 	 * Sends password reset message.
 	 * @param string $sRecipientEmail
@@ -279,7 +286,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			$sGreeting = $this->i18N('LABEL_MESSAGE_GREETING');
 			$sMessage = \strtr($this->i18N('LABEL_RESET_PASSWORD_MESSAGE'), [
 				'%SITE_NAME%' => $sSiteName,
-				'%RESET_PASSWORD_URL%' => \rtrim(Application::getBaseUrl(), '\\/ ') . '/#reset-password/' . $sHash,
+				'%RESET_PASSWORD_URL%' => \rtrim(Application::getBaseUrl(), '\\/ ') . '/#' . $this->getHashModuleName() . '/' . $sHash,
 			]);
 			$sSignature = \strtr($this->i18N('LABEL_MESSAGE_SIGNATURE'), ['%SITE_NAME%' => $sSiteName]);
             $sBody = \strtr($sBody, array(
@@ -410,7 +417,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 		
 		$aSettings = [
-			'HashModuleName' => $this->getConfig('HashModuleName', 'login'),
+			'HashModuleName' => $this->getConfig('HashModuleName', 'reset-password'),
 			'CustomLogoUrl' => $this->getConfig('CustomLogoUrl', ''),
 			'BottomInfoHtmlText' => $this->getConfig('BottomInfoHtmlText', ''),
 		];
@@ -633,7 +640,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 		if ($oUser instanceof User)
 		{
 			$bPrevState = \Aurora\Api::skipCheckUserRole(true);
-			$sPasswordResetHash = $this->generateHash($oUser->Id, 'reset-password', __FUNCTION__);
+			$sHashModuleName = $this->getConfig('HashModuleName', 'reset-password');
+			$sPasswordResetHash = $this->generateHash($oUser->Id, $this->getHashModuleName(), __FUNCTION__);
 			$oUser->setExtendedProp(self::GetName().'::PasswordResetHash', $sPasswordResetHash);
 			\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
 			\Aurora\Api::skipCheckUserRole($bPrevState);
@@ -659,7 +667,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 	{
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 		
-		$oUser = $this->getUserByHash($Hash, 'reset-password');
+		$oUser = $this->getUserByHash($Hash, $this->getHashModuleName());
 
 		if ($oUser instanceof User)
 		{
@@ -682,7 +690,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oMail = \Aurora\Modules\Mail\Module::Decorator();
         $oMin = \Aurora\Modules\Min\Module::Decorator();
 
-        $oUser = $this->getUserByHash($Hash, 'reset-password', true);
+        $oUser = $this->getUserByHash($Hash, $this->getHashModuleName(), true);
 
         $mResult = false;
         $oAccount = null;
@@ -691,7 +699,6 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             $aAccounts = $oMail->GetAccounts($oUser->Id);
             $oAccount = reset($aAccounts);
         }
-
 
         if (!empty($oUser) && !empty($oAccount) && !empty($NewPassword))
         {
@@ -715,6 +722,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 			{
                 $oMin->DeleteMinByHash($Hash);
 				\Aurora\System\Api::UserSession()->DeleteAllUserSessions($oUser->Id);
+				$oUser->TokensValidFromTimestamp = time();
+				$oUser->save();
             }
         }
         else

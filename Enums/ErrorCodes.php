@@ -14,12 +14,12 @@ namespace Aurora\Modules\StandardResetPassword\Enums;
  */
 class ErrorCodes
 {
-	const WrongPassword = 5001;
+    public const WrongPassword = 5001;
 
-	/**
-	 * @var array
-	 */
-	protected $aConsts = [
-		'WrongPassword' => self::WrongPassword,
-	];
+    /**
+     * @var array
+     */
+    protected $aConsts = [
+        'WrongPassword' => self::WrongPassword,
+    ];
 }

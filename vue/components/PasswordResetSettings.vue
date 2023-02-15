@@ -9,73 +9,97 @@
           <div class="row">
             <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_RECOVERY_LINK_LIFETIME_MINUTES') }}</div>
             <div class="col-5">
-              <q-input outlined dense bg-color="white" v-model="recoveryLinkLifetimeMinutes"/>
+              <q-input outlined dense bg-color="white" v-model="recoveryLinkLifetimeMinutes" />
             </div>
           </div>
           <div class="row q-my-md">
-              <q-item-label caption>
-                <span class="" v-t="'STANDARDRESETPASSWORD.HINT_RECOVERY_LINK_LIFETIME'" />
-              </q-item-label>
+            <q-item-label caption>
+              <span class="" v-t="'STANDARDRESETPASSWORD.HINT_RECOVERY_LINK_LIFETIME'" />
+            </q-item-label>
           </div>
           <div class="row q-mt-sm">
             <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_EMAIL') }}</div>
             <div class="col-5">
-              <q-input outlined dense bg-color="white" v-model="notificationEmail"/>
+              <q-input outlined dense bg-color="white" v-model="notificationEmail" />
             </div>
           </div>
           <div class="row q-mt-md">
             <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE') }}</div>
             <div class="col-5">
-              <q-select flat
-                        outlined
-                        dense bg-color="white" v-model="notificationType"
-                        :options="notificationTypes"/>
+              <q-select flat outlined dense bg-color="white" v-model="notificationType" :options="notificationTypes" />
             </div>
           </div>
           <div class="row q-my-md">
             <q-item-label caption>
-              <span>  {{ inscription }}</span>
+              <span> {{ inscription }}</span>
             </q-item-label>
           </div>
           <div class="row q-mt-sm" v-if="notificationType.value === 'smtp'">
             <div class="col-2 q-mt-sm">{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_HOST') }}</div>
             <div class="col-5">
-              <q-input outlined dense bg-color="white" v-model="notificationHost"/>
+              <q-input outlined dense bg-color="white" v-model="notificationHost" />
             </div>
-            <div class="col-1 q-ma-sm text-right" v-t="'MAILWEBCLIENT.LABEL_PORT'"/>
+            <div class="col-1 q-ma-sm text-right" v-t="'MAILWEBCLIENT.LABEL_PORT'" />
             <div class="col-1">
-              <q-input outlined dense bg-color="white" v-model="notificationPort"/>
+              <q-input outlined dense bg-color="white" v-model="notificationPort" />
             </div>
-            <div class="col-1 q-pb-md  q-ml-sm">
-              <q-checkbox v-model="notificationUseSsl">
-                <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_SSL') }}</q-item-label>
-              </q-checkbox>
+            <div class="col-2 q-pb-md q-ml-sm">
+              <q-select
+                outlined
+                dense
+                bg-color="white"
+                v-model="notificationSMTPSecure"
+                emit-value
+                map-options
+                :options="SMTPSecureOptions"
+              />
             </div>
           </div>
           <div class="row q-mt-sm" v-if="notificationType.value === 'smtp'">
             <div class="col-2 q-mt-sm">
               <q-checkbox dense v-model="notificationUseAuth">
-                  <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_AUTH') }}</q-item-label>
+                <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_AUTH') }}</q-item-label>
               </q-checkbox>
             </div>
             <div class="col-2">
-              <q-input outlined dense bg-color="white" :placeholder="$t('COREWEBCLIENT.LABEL_LOGIN')"
-                       :disable="!notificationUseAuth" v-model="notificationLogin"/>
+              <q-input
+                outlined
+                dense
+                bg-color="white"
+                :placeholder="$t('COREWEBCLIENT.LABEL_LOGIN')"
+                :disable="!notificationUseAuth"
+                v-model="notificationLogin"
+              />
             </div>
             <div class="col-2 q-ml-sm">
-              <q-input outlined dense bg-color="white" :placeholder="$t('COREWEBCLIENT.LABEL_PASSWORD')"
-                       type="password" autocomplete="new-password"
-                       :disable="!notificationUseAuth" v-model="notificationPassword"/>
+              <q-input
+                outlined
+                dense
+                bg-color="white"
+                :placeholder="$t('COREWEBCLIENT.LABEL_PASSWORD')"
+                type="password"
+                autocomplete="new-password"
+                :disable="!notificationUseAuth"
+                v-model="notificationPassword"
+              />
             </div>
           </div>
         </q-card-section>
       </q-card>
       <div class="q-pt-md text-right">
-        <q-btn unelevated no-caps dense class="q-px-sm" :ripple="false" color="primary"
-               :label="$t('COREWEBCLIENT.ACTION_SAVE')" @click="save"/>
+        <q-btn
+          unelevated
+          no-caps
+          dense
+          class="q-px-sm"
+          :ripple="false"
+          color="primary"
+          :label="$t('COREWEBCLIENT.ACTION_SAVE')"
+          @click="save"
+        />
       </div>
     </div>
-    <q-inner-loading style="justify-content: flex-start;" :showing="saving">
+    <q-inner-loading style="justify-content: flex-start" :showing="saving">
       <q-linear-progress query />
     </q-inner-loading>
   </q-scroll-area>
@@ -86,6 +110,7 @@ import errors from 'src/utils/errors'
 import notification from 'src/utils/notification'
 import webApi from 'src/utils/web-api'
 
+import enums from '../enums'
 import settings from '../settings'
 
 const FAKE_PASS = '     '
@@ -93,7 +118,7 @@ const FAKE_PASS = '     '
 export default {
   name: 'PasswordResetSettings',
 
-  data () {
+  data() {
     return {
       saving: false,
       notificationTypes: [],
@@ -103,20 +128,26 @@ export default {
       notificationEmail: '',
       notificationPort: 0,
       notificationHost: '',
-      notificationUseSsl: false,
+      SMTPSecureEnum: enums.SMTPSecure,
+      SMTPSecureOptions: [
+        { label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_SMTP_NO_SECURE'), value: enums.SMTPSecure.noSecure },
+        { label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_SMTP_SSL_SECURE'), value: enums.SMTPSecure.ssl },
+        { label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_SMTP_TLS_SECURE'), value: enums.SMTPSecure.tls },
+      ],
+      notificationSMTPSecure: enums.SMTPSecure.noSecure,
       notificationUseAuth: false,
       notificationLogin: '',
       notificationPassword: FAKE_PASS,
       savedPass: FAKE_PASS,
-      hasNotificationPassword: false
+      hasNotificationPassword: false,
     }
   },
 
-  beforeRouteLeave (to, from, next) {
+  beforeRouteLeave(to, from, next) {
     this.doBeforeRouteLeave(to, from, next)
   },
 
-  mounted () {
+  mounted() {
     this.populate()
   },
 
@@ -124,30 +155,42 @@ export default {
     'notificationType.value': function () {
       this.setInscription()
     },
-    notificationUseSsl (val) {
-      if (val && this.notificationPort === 25) {
-        this.notificationPort = 465
-      } else if (!val && this.notificationPort === 465) {
-        this.notificationPort = 25
+
+    notificationSMTPSecure() {
+      console.log('notificationSMTPSecure', this.notificationSMTPSecure)
+      switch (this.notificationSMTPSecure) {
+        case this.SMTPSecureEnum.noSecure:
+          if (this.notificationPort === 465) {
+            this.notificationPort = 25
+          }
+          break
+        case this.SMTPSecureEnum.ssl:
+        case this.SMTPSecureEnum.tls:
+          if (this.notificationPort === 25) {
+            this.notificationPort = 465
+          }
+          break
       }
-    }
+    },
   },
 
   methods: {
     /**
      * Method is used in doBeforeRouteLeave mixin
      */
-    hasChanges () {
+    hasChanges() {
       const data = settings.getStandardResetPasswordSettings()
-      return this.recoveryLinkLifetimeMinutes !== data.recoveryLinkLifetimeMinutes ||
-          this.notificationEmail !== data.notificationEmail ||
-          this.notificationPort !== data.notificationPort ||
-          this.notificationHost !== data.notificationHost ||
-          this.notificationUseSsl !== data.notificationUseSsl ||
-          this.notificationUseAuth !== data.notificationUseAuth ||
-          this.notificationLogin !== data.notificationLogin ||
-          this.hasNotificationPassword !== data.hasNotificationPassword ||
-          this.notificationType.value !== data.notificationType
+      return (
+        this.recoveryLinkLifetimeMinutes !== data.recoveryLinkLifetimeMinutes ||
+        this.notificationEmail !== data.notificationEmail ||
+        this.notificationPort !== data.notificationPort ||
+        this.notificationHost !== data.notificationHost ||
+        this.notificationSMTPSecure !== data.notificationSMTPSecure ||
+        this.notificationUseAuth !== data.notificationUseAuth ||
+        this.notificationLogin !== data.notificationLogin ||
+        this.hasNotificationPassword !== data.hasNotificationPassword ||
+        this.notificationType.value !== data.notificationType
+      )
     },
 
     /**
@@ -155,17 +198,17 @@ export default {
      * do not use async methods - just simple and plain reverting of values
      * !! hasChanges method must return true after executing revertChanges method
      */
-    revertChanges () {
+    revertChanges() {
       this.populate()
     },
 
-    populate () {
+    populate() {
       const data = settings.getStandardResetPasswordSettings()
       this.recoveryLinkLifetimeMinutes = data.recoveryLinkLifetimeMinutes
       this.notificationEmail = data.notificationEmail
       this.notificationPort = data.notificationPort
       this.notificationHost = data.notificationHost
-      this.notificationUseSsl = data.notificationUseSsl
+      this.notificationSMTPSecure = data.notificationSMTPSecure
       this.notificationUseAuth = data.notificationUseAuth
       this.notificationLogin = data.notificationLogin
       this.hasNotificationPassword = data.hasNotificationPassword
@@ -175,21 +218,21 @@ export default {
         { value: 'smtp', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_SMTP') },
         { value: 'account', label: this.$t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_TYPE_ACCOUNT') },
       ]
-      this.notificationType = this.notificationTypes.find(type => type.value === notificationType)
+      this.notificationType = this.notificationTypes.find((type) => type.value === notificationType)
       this.setInscription()
     },
-    save () {
+    save() {
       if (!this.saving) {
         this.saving = true
         const parameters = {
           NotificationEmail: this.notificationEmail,
           NotificationType: this.notificationType.value,
-          RecoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
+          RecoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes,
         }
         if (this.notificationType.value === 'smtp') {
           parameters.NotificationHost = this.notificationHost
           parameters.NotificationPort = this.notificationPort
-          parameters.NotificationUseSsl = this.notificationUseSsl
+          parameters.NotificationSMTPSecure = this.notificationSMTPSecure
           parameters.NotificationUseAuth = this.notificationUseAuth
           if (this.notificationUseAuth) {
             parameters.NotificationLogin = this.notificationLogin
@@ -200,37 +243,44 @@ export default {
             parameters.NotificationUseAuth = this.notificationUseAuth
           }
         }
-        webApi.sendRequest({
-          moduleName: 'StandardResetPassword',
-          methodName: 'UpdateAdminSettings',
-          parameters: parameters,
-        }).then(result => {
-          this.saving = false
-          if (result) {
-            settings.saveStandardResetPasswordSettings({
-              notificationHost: this.notificationHost,
-              notificationPort: this.notificationPort,
-              notificationUseSsl: this.notificationUseSsl,
-              notificationUseAuth: this.notificationUseAuth,
-              notificationLogin: this.notificationLogin,
-              hasNotificationPassword: this.notificationPassword !== '' && this.notificationUseAuth,
-              notificationEmail: this.notificationEmail,
-              notificationType: this.notificationType.value,
-              recoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes
-            })
-            this.savedPass = this.notificationPassword
-            notification.showReport(this.$t('COREWEBCLIENT.REPORT_SETTINGS_UPDATE_SUCCESS'))
-            this.populate()
-          } else {
-            notification.showError(this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED'))
-          }
-        }, response => {
-          this.saving = false
-          notification.showError(errors.getTextFromResponse(response, this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED')))
-        })
+        webApi
+          .sendRequest({
+            moduleName: 'StandardResetPassword',
+            methodName: 'UpdateAdminSettings',
+            parameters: parameters,
+          })
+          .then(
+            (result) => {
+              this.saving = false
+              if (result) {
+                settings.saveStandardResetPasswordSettings({
+                  notificationHost: this.notificationHost,
+                  notificationPort: this.notificationPort,
+                  notificationSMTPSecure: this.notificationSMTPSecure,
+                  notificationUseAuth: this.notificationUseAuth,
+                  notificationLogin: this.notificationLogin,
+                  hasNotificationPassword: this.notificationPassword !== '' && this.notificationUseAuth,
+                  notificationEmail: this.notificationEmail,
+                  notificationType: this.notificationType.value,
+                  recoveryLinkLifetimeMinutes: this.recoveryLinkLifetimeMinutes,
+                })
+                this.savedPass = this.notificationPassword
+                notification.showReport(this.$t('COREWEBCLIENT.REPORT_SETTINGS_UPDATE_SUCCESS'))
+                this.populate()
+              } else {
+                notification.showError(this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED'))
+              }
+            },
+            (response) => {
+              this.saving = false
+              notification.showError(
+                errors.getTextFromResponse(response, this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED'))
+              )
+            }
+          )
       }
     },
-    setInscription () {
+    setInscription() {
       switch (this.notificationType?.value) {
         case 'smtp':
           this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_SMTP')
@@ -242,11 +292,9 @@ export default {
           this.inscription = this.$t('STANDARDRESETPASSWORD.HINT_NOTIFICATION_TYPE_ACCOUNT')
           break
       }
-    }
-  }
+    },
+  },
 }
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

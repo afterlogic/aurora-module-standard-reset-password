@@ -2,8 +2,10 @@ import _ from 'lodash'
 
 import typesUtils from 'src/utils/types'
 
+import enums from './enums'
+
 class StandardResetPassword {
-  constructor (appData) {
+  constructor(appData) {
     const standardResetPassword = typesUtils.pObject(appData.StandardResetPassword)
     if (!_.isEmpty(standardResetPassword)) {
       this.recoveryLinkLifetimeMinutes = typesUtils.pInt(standardResetPassword.RecoveryLinkLifetimeMinutes)
@@ -11,14 +13,28 @@ class StandardResetPassword {
       this.notificationType = typesUtils.pString(standardResetPassword.NotificationType)
       this.notificationHost = typesUtils.pString(standardResetPassword.NotificationHost)
       this.notificationPort = typesUtils.pInt(standardResetPassword.NotificationPort)
-      this.notificationUseSsl = typesUtils.pBool(standardResetPassword.NotificationUseSsl)
+      this.notificationSMTPSecure = typesUtils.pEnum(
+        standardResetPassword.notificationSMTPSecure,
+        enums.SMTPSecure,
+        enums.SMTPSecure.noSecure
+      )
       this.notificationUseAuth = typesUtils.pBool(standardResetPassword.NotificationUseAuth)
       this.notificationLogin = typesUtils.pString(standardResetPassword.NotificationLogin)
       this.hasNotificationPassword = typesUtils.pBool(standardResetPassword.HasNotificationPassword)
     }
   }
 
-  saveStandardResetPasswordSettings ({ notificationEmail, notificationType, notificationHost, notificationPort, notificationUseSsl, notificationUseAuth, notificationLogin, hasNotificationPassword, recoveryLinkLifetimeMinutes }) {
+  saveStandardResetPasswordSettings({
+    notificationEmail,
+    notificationType,
+    notificationHost,
+    notificationPort,
+    notificationSMTPSecure,
+    notificationUseAuth,
+    notificationLogin,
+    hasNotificationPassword,
+    recoveryLinkLifetimeMinutes,
+  }) {
     this.recoveryLinkLifetimeMinutes = recoveryLinkLifetimeMinutes
     this.notificationEmail = notificationEmail
     this.notificationType = notificationType
@@ -26,7 +42,7 @@ class StandardResetPassword {
     if (notificationType === 'smtp') {
       this.notificationHost = notificationHost
       this.notificationPort = notificationPort
-      this.notificationUseSsl = notificationUseSsl
+      this.notificationSMTPSecure = notificationSMTPSecure
       this.notificationUseAuth = notificationUseAuth
       this.notificationLogin = notificationLogin
       this.hasNotificationPassword = hasNotificationPassword
@@ -37,23 +53,25 @@ class StandardResetPassword {
 let settings = null
 
 export default {
-  init (appData) {
+  init(appData) {
     settings = new StandardResetPassword(appData)
   },
-  getStandardResetPasswordSettings () {
+
+  getStandardResetPasswordSettings() {
     return {
       notificationEmail: settings.notificationEmail,
       notificationType: settings.notificationType,
       notificationHost: settings.notificationHost,
       notificationPort: settings.notificationPort,
-      notificationUseSsl: settings.notificationUseSsl,
+      notificationSMTPSecure: settings.notificationSMTPSecure,
       notificationUseAuth: settings.notificationUseAuth,
       notificationLogin: settings.notificationLogin,
       hasNotificationPassword: settings.hasNotificationPassword,
-      recoveryLinkLifetimeMinutes: settings.recoveryLinkLifetimeMinutes
+      recoveryLinkLifetimeMinutes: settings.recoveryLinkLifetimeMinutes,
     }
   },
-  saveStandardResetPasswordSettings (appData) {
+
+  saveStandardResetPasswordSettings(appData) {
     settings.saveStandardResetPasswordSettings(appData)
-  }
+  },
 }

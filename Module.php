@@ -127,8 +127,9 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         return [
             'Host' => $this->getConfig('NotificationHost', ''),
             'Port' => $this->getConfig('NotificationPort', 25),
-            'UseSsl' => $this->getConfig('NotificationUseSsl', false),
+            'UseSsl' => !empty($this->getConfig('SMTPSecure', '')),
             'SMTPAuth' => (bool) $this->getConfig('NotificationUseAuth', false),
+            'SMTPSecure' => $this->getConfig('NotificationSMTPSecure', ''),
             'Username' => $this->getConfig('NotificationLogin', ''),
             'Password' => \Aurora\System\Utils::DecryptValue($this->getConfig('NotificationPassword', '')),
         ];
@@ -152,6 +153,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             'Host' => '',
             'Port' => '',
             'UseSsl' => false,
+            'SMTPSecure' => 'ssl',
             'SMTPAuth' => false,
             'Username' => '',
             'Password' => '',
@@ -211,7 +213,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
                 $oMail->Port = $aConfig['Port'];
                 $oMail->SMTPAuth = $aConfig['SMTPAuth'];
                 if ($aConfig['UseSsl']) {
-                    $oMail->SMTPSecure = 'ssl';
+                    $oMail->SMTPSecure = $aConfig['SMTPSecure'];
                 }
                 $oMail->Username = $aConfig['Username'];
                 $oMail->Password = $aConfig['Password'];
@@ -403,7 +405,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
                 $aSettings['NotificationType'] = $this->getConfig('NotificationType', '');
                 $aSettings['NotificationHost'] = $this->getConfig('NotificationHost', '');
                 $aSettings['NotificationPort'] = $this->getConfig('NotificationPort', 25);
-                $aSettings['NotificationUseSsl'] = $this->getConfig('NotificationUseSsl', false);
+                $aSettings['NotificationSMTPSecure'] = $this->getConfig('NotificationSMTPSecure', '');
                 $aSettings['NotificationUseAuth'] = $this->getConfig('NotificationUseAuth', false);
                 $aSettings['NotificationLogin'] = $this->getConfig('NotificationLogin', '');
                 $aSettings['HasNotificationPassword'] = !empty($this->getConfig('NotificationPassword', ''));
@@ -485,7 +487,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $NotificationType,
         $NotificationHost = null,
         $NotificationPort = null,
-        $NotificationUseSsl = null,
+        $NotificationSMTPSecure = null,
         $NotificationUseAuth = null,
         $NotificationLogin = null,
         $NotificationPassword = null
@@ -499,7 +501,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         if ($NotificationType === 'smtp') {
             $this->setConfig('NotificationHost', $NotificationHost);
             $this->setConfig('NotificationPort', $NotificationPort);
-            $this->setConfig('NotificationUseSsl', $NotificationUseSsl);
+            $this->setConfig('NotificationSMTPSecure', $NotificationSMTPSecure);
             $this->setConfig('NotificationUseAuth', $NotificationUseAuth);
             if ($NotificationUseAuth) {
                 $this->setConfig('NotificationLogin', $NotificationLogin);

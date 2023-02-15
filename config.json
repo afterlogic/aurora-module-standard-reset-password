@@ -63,12 +63,12 @@
 		"SMTP server port number",
 		"string"
 	],
-	"NotificationUseSsl": [
-		false,
-		"bool"
+	"NotificationSMTPSecure": [
+		"",
+		"string"
 	],
-	"NotificationUseSsl_Description": [
-		"If set to true, SSL-enabled connection to SMTP server will be used",
+	"NotificationSMTPSecure_Description": [
+		"Set to 'ssl' or 'tls' to use SSL or STARTTLS respectively",
 		"string"
 	],
 	"NotificationUseAuth": [

@@ -157,7 +157,6 @@ export default {
     },
 
     notificationSMTPSecure() {
-      console.log('notificationSMTPSecure', this.notificationSMTPSecure)
       switch (this.notificationSMTPSecure) {
         case this.SMTPSecureEnum.noSecure:
           if (this.notificationPort === 465) {

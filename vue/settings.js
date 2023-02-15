@@ -14,7 +14,7 @@ class StandardResetPassword {
       this.notificationHost = typesUtils.pString(standardResetPassword.NotificationHost)
       this.notificationPort = typesUtils.pInt(standardResetPassword.NotificationPort)
       this.notificationSMTPSecure = typesUtils.pEnum(
-        standardResetPassword.notificationSMTPSecure,
+        standardResetPassword.NotificationSMTPSecure,
         enums.SMTPSecure,
         enums.SMTPSecure.noSecure
       )

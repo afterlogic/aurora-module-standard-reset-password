@@ -318,8 +318,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
      * Returns user with identifier obtained from the hash.
      * @param string $sHash
      * @param string $sType
-     * @param string $bAdd5Min
-     * @return \Aurora\Modules\Core\Classes\User
+     * @param boolean $bAdd5Min
+     * @return \Aurora\Modules\Core\Models\User
      */
     protected function getUserByHash($sHash, $sType, $bAdd5Min = false)
     {
@@ -475,8 +475,15 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 
   /**
        * Updates per user settings.
-       * @param string $RecoveryEmail
-       * @param string $Password
+       * @param int $RecoveryLinkLifetimeMinutes
+       * @param string $NotificationEmail
+       * @param string $NotificationType
+       * @param string $NotificationHost
+       * @param int $NotificationPort
+       * @param string $NotificationSMTPSecure
+       * @param boolean $NotificationUseAuth
+       * @param string $NotificationLogin
+       * @param string $NotificationPassword
        * @return boolean|string
        * @throws \Aurora\System\Exceptions\ApiException
        * @throws \Aurora\Modules\StandardResetPassword\Exceptions\Exception
@@ -491,8 +498,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $NotificationUseAuth = null,
         $NotificationLogin = null,
         $NotificationPassword = null
-    )
-    {
+    ) {
         \Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::SuperAdmin);
 
         $this->setConfig('RecoveryLinkLifetimeMinutes', $RecoveryLinkLifetimeMinutes);
@@ -641,12 +647,12 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 
         $mResult = false;
         $oAccount = null;
-        if (!empty($oMail) && !empty($oUser)) {
+        if ($oMail && $oUser) {
             $aAccounts = $oMail->GetAccounts($oUser->Id);
             $oAccount = reset($aAccounts);
         }
 
-        if (!empty($oUser) && !empty($oAccount) && !empty($NewPassword)) {
+        if ($oUser && $oAccount && $NewPassword) {
             $aArgs = [
                 'Account' => $oAccount,
                 'CurrentPassword' => '',
@@ -663,7 +669,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
                 $aResponse
             );
             $mResult = $aResponse['AccountPasswordChanged'];
-            if ($mResult && !empty($oMin) && !empty($Hash)) {
+            if ($mResult && $oMin && !empty($Hash)) {
                 $oMin->DeleteMinByHash($Hash);
                 \Aurora\System\Api::UserSession()->DeleteAllUserSessions($oUser->Id);
                 $oUser->TokensValidFromTimestamp = time();

@@ -44,6 +44,15 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $this->AddEntry('confirm-recovery-email', 'EntryConfirmRecoveryEmail');
     }
 
+    /**
+     *
+     * @return Module
+     */
+    public static function Decorator()
+    {
+        return parent::Decorator();
+    }
+
     public function EntryConfirmRecoveryEmail()
     {
         \Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);

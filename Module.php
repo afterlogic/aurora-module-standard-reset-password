@@ -16,6 +16,8 @@ use Aurora\System\Application;
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
  * @copyright Copyright (c) 2023, Afterlogic Corp.
  *
+ * @property Settings $oModuleSettings
+ *
  * @package Modules
  */
 class Module extends \Aurora\System\Module\AbstractWebclientModule
@@ -125,7 +127,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
                 $mHash = $oMin->DeleteMinByID($sMinId);
             }
 
-            $iRecoveryLinkLifetimeMinutes = $this->getConfig('RecoveryLinkLifetimeMinutes', 0);
+            $iRecoveryLinkLifetimeMinutes = $this->oModuleSettings->RecoveryLinkLifetimeMinutes;
             $iExpiresSeconds = time() + $iRecoveryLinkLifetimeMinutes * 60;
             $mHash = $oMin->CreateMin(
                 $sMinId,
@@ -143,13 +145,13 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
     protected function getSmtpConfig()
     {
         return [
-            'Host' => $this->getConfig('NotificationHost', ''),
-            'Port' => $this->getConfig('NotificationPort', 25),
-            'UseSsl' => !empty($this->getConfig('SMTPSecure', '')),
-            'SMTPAuth' => (bool) $this->getConfig('NotificationUseAuth', false),
-            'SMTPSecure' => $this->getConfig('NotificationSMTPSecure', ''),
-            'Username' => $this->getConfig('NotificationLogin', ''),
-            'Password' => \Aurora\System\Utils::DecryptValue($this->getConfig('NotificationPassword', '')),
+            'Host' => $this->oModuleSettings->NotificationHost,
+            'Port' => $this->oModuleSettings->NotificationPort,
+            'UseSsl' => !empty($this->oModuleSettings->SMTPSecure),
+            'SMTPAuth' => (bool) $this->oModuleSettings->NotificationUseAuth,
+            'SMTPSecure' => $this->oModuleSettings->NotificationSMTPSecure,
+            'Username' => $this->oModuleSettings->NotificationLogin,
+            'Password' => \Aurora\System\Utils::DecryptValue($this->oModuleSettings->NotificationPassword),
         ];
     }
 
@@ -217,8 +219,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 
         $oMail = new PHPMailer();
 
-        $sFrom = $this->getConfig('NotificationEmail', '');
-        $sType = \strtolower($this->getConfig('NotificationType', 'mail'));
+        $sFrom = $this->oModuleSettings->NotificationEmail;
+        $sType = \strtolower($this->oModuleSettings->NotificationType);
         switch ($sType) {
             case 'mail':
                 $oMail->isMail();
@@ -269,7 +271,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 
     protected function getHashModuleName()
     {
-        return $this->getConfig('HashModuleName', 'reset-password');
+        return $this->oModuleSettings->HashModuleName;
     }
     /**
      * Sends password reset message.
@@ -345,7 +347,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oMin = \Aurora\Modules\Min\Module::Decorator();
         $mHash = $oMin ? $oMin->GetMinByHash($sHash) : null;
         if (!empty($mHash) && isset($mHash['__hash__'], $mHash['UserId'], $mHash['Type']) && $mHash['Type'] === $sType) {
-            $iRecoveryLinkLifetimeMinutes = $this->getConfig('RecoveryLinkLifetimeMinutes', 0);
+            $iRecoveryLinkLifetimeMinutes = $this->oModuleSettings->RecoveryLinkLifetimeMinutes;
             $bRecoveryLinkAlive = ($iRecoveryLinkLifetimeMinutes === 0);
             if (!$bRecoveryLinkAlive) {
                 $iExpiresSeconds = $mHash['Expires'];
@@ -406,9 +408,9 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         \Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 
         $aSettings = [
-            'HashModuleName' => $this->getConfig('HashModuleName', 'reset-password'),
-            'CustomLogoUrl' => $this->getConfig('CustomLogoUrl', ''),
-            'BottomInfoHtmlText' => $this->getConfig('BottomInfoHtmlText', ''),
+            'HashModuleName' => $this->oModuleSettings->HashModuleName,
+            'CustomLogoUrl' => $this->oModuleSettings->CustomLogoUrl,
+            'BottomInfoHtmlText' => $this->oModuleSettings->BottomInfoHtmlText,
         ];
 
         $oAuthenticatedUser = \Aurora\System\Api::getAuthenticatedUser();
@@ -418,15 +420,15 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
                 $aSettings['RecoveryEmailConfirmed'] = empty($oAuthenticatedUser->{self::GetName().'::ConfirmRecoveryEmailHash'});
             }
             if ($oAuthenticatedUser->Role === \Aurora\System\Enums\UserRole::SuperAdmin) {
-                $aSettings['RecoveryLinkLifetimeMinutes'] = $this->getConfig('RecoveryLinkLifetimeMinutes', 15);
-                $aSettings['NotificationEmail'] = $this->getConfig('NotificationEmail', '');
-                $aSettings['NotificationType'] = $this->getConfig('NotificationType', '');
-                $aSettings['NotificationHost'] = $this->getConfig('NotificationHost', '');
-                $aSettings['NotificationPort'] = $this->getConfig('NotificationPort', 25);
-                $aSettings['NotificationSMTPSecure'] = $this->getConfig('NotificationSMTPSecure', '');
-                $aSettings['NotificationUseAuth'] = $this->getConfig('NotificationUseAuth', false);
-                $aSettings['NotificationLogin'] = $this->getConfig('NotificationLogin', '');
-                $aSettings['HasNotificationPassword'] = !empty($this->getConfig('NotificationPassword', ''));
+                $aSettings['RecoveryLinkLifetimeMinutes'] = $this->oModuleSettings->RecoveryLinkLifetimeMinutes;
+                $aSettings['NotificationEmail'] = $this->oModuleSettings->NotificationEmail;
+                $aSettings['NotificationType'] = $this->oModuleSettings->NotificationType;
+                $aSettings['NotificationHost'] = $this->oModuleSettings->NotificationHost;
+                $aSettings['NotificationPort'] = $this->oModuleSettings->NotificationPort;
+                $aSettings['NotificationSMTPSecure'] = $this->oModuleSettings->NotificationSMTPSecure;
+                $aSettings['NotificationUseAuth'] = $this->oModuleSettings->NotificationUseAuth;
+                $aSettings['NotificationLogin'] = $this->oModuleSettings->NotificationLogin;
+                $aSettings['HasNotificationPassword'] = !empty($this->oModuleSettings->NotificationPassword);
             }
         }
 
@@ -613,7 +615,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
         if ($oUser instanceof User) {
             $bPrevState = \Aurora\Api::skipCheckUserRole(true);
-            $sHashModuleName = $this->getConfig('HashModuleName', 'reset-password');
+            $sHashModuleName = $this->oModuleSettings->HashModuleName;
             $sPasswordResetHash = $this->generateHash($oUser->Id, $this->getHashModuleName(), __FUNCTION__);
             $oUser->setExtendedProp(self::GetName().'::PasswordResetHash', $sPasswordResetHash);
             \Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);

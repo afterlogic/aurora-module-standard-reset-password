@@ -39,7 +39,7 @@
             <div class="col-5">
               <q-input outlined dense bg-color="white" v-model="notificationHost" />
             </div>
-            <div class="col-1 q-ma-sm text-right" v-t="'MAILWEBCLIENT.LABEL_PORT'" />
+            <div class="col-1 q-ma-sm text-right" v-t="'STANDARDRESETPASSWORD.LABEL_NOTIFICATION_PORT'" />
             <div class="col-1">
               <q-input outlined dense bg-color="white" v-model="notificationPort" />
             </div>

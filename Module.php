@@ -459,8 +459,13 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oAuthenticatedUser = Api::getAuthenticatedUser();
         if ($oAuthenticatedUser instanceof User) {
             if ($oAuthenticatedUser->isNormalOrTenant()) {
+
+                $iRecoveryAccountId = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::RecoveryAccountId');
+                $oAccount = $this->getAccountById($oAuthenticatedUser->Id, $iRecoveryAccountId);
+
                 $aSettings['RecoveryEmail'] = $this->getStarredRecoveryEmail($oAuthenticatedUser);
                 $aSettings['RecoveryEmailConfirmed'] = empty($oAuthenticatedUser->getExtendedProp(self::GetName() . '::ConfirmRecoveryEmailHash'));
+                $aSettings['RecoveryAccount'] = $oAccount ? $oAccount->getLogin() : '';
             }
             if ($oAuthenticatedUser->Role === \Aurora\System\Enums\UserRole::SuperAdmin) {
                 $aSettings['RecoveryLinkLifetimeMinutes'] = $this->oModuleSettings->RecoveryLinkLifetimeMinutes;
@@ -504,33 +509,47 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
 
             $sPrevRecoveryEmail = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::RecoveryEmail');
             $sPrevConfirmRecoveryEmail = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::ConfirmRecoveryEmail');
+            $sPrevAccountId = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::RecoveryAccountId');
+
             $sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oAuthenticatedUser->Id, 'confirm-recovery-email', __FUNCTION__) : '';
 
             $oAuthenticatedUser->setExtendedProp(self::GetName() . '::ConfirmRecoveryEmailHash', $sConfirmRecoveryEmailHash);
             $oAuthenticatedUser->setExtendedProp(self::GetName() . '::RecoveryEmail', $RecoveryEmail);
             $oAuthenticatedUser->setExtendedProp(self::GetName() . '::RecoveryAccountId', $oAccount->Id);
 
-            if (\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oAuthenticatedUser)) {
-                $bResult = true;
-                $oSentEx = null;
-                try {
-                    // Send message to confirm recovery email if it's not empty.
-                    if (!empty($RecoveryEmail)) {
+            $bResult = \Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oAuthenticatedUser);
+            if ($bResult) {
+
+                if (!empty($RecoveryEmail)) {
+                    $oSentException = null;
+                    try {
+                        // Send message to confirm recovery email if it's not empty.
                         $bResult = $this->sendRecoveryEmailConfirmationMessage($RecoveryEmail, $sConfirmRecoveryEmailHash);
+                    } catch (\Exception $oException) {
+                        $bResult = false;
+                        $oSentException = $oException;
                     }
-                } catch (\Exception $oEx) {
-                    $bResult = false;
-                    $oSentEx = $oEx;
+
+                    if (!$bResult) {
+                        $oAuthenticatedUser->setExtendedProps([
+                            self::GetName() . '::ConfirmRecoveryEmailHash' => $sPrevConfirmRecoveryEmail,
+                            self::GetName() . '::RecoveryEmail', $sPrevRecoveryEmail,
+                            self::GetName() . '::RecoveryAccountId', $sPrevAccountId
+                        ]);
+                        \Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oAuthenticatedUser);
+                    }
+
+                    if ($oSentException !== null) {
+                        throw $oSentException;
+                    }
                 }
-                if (!$bResult) {
-                    $oAuthenticatedUser->setExtendedProp(self::GetName() . '::ConfirmRecoveryEmailHash', $sPrevConfirmRecoveryEmail);
-                    $oAuthenticatedUser->setExtendedProp(self::GetName() . '::RecoveryEmail', $sPrevRecoveryEmail);
-                    \Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oAuthenticatedUser);
-                }
-                if ($oSentEx !== null) {
-                    throw $oSentEx;
-                }
-                return $bResult ? $this->getStarredRecoveryEmail($oAuthenticatedUser) : false;
+            }
+
+            if ($bResult) {
+                return [
+                    'RecoveryEmail' => $this->getStarredRecoveryEmail($oAuthenticatedUser),
+                    'RecoveryAccount' => $oAccount->getLogin()
+                ];
             } else {
                 return false;
             }

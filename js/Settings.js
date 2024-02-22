@@ -13,6 +13,7 @@ module.exports = {
 	CustomLogoUrl: '',
 	RecoveryEmail: '',
 	RecoveryEmailConfirmed: false,
+	RecoveryAccount: '',
 
 	/**
 	 * Initializes settings from AppData object sections.
@@ -31,12 +32,14 @@ module.exports = {
 			this.CustomLogoUrl = Types.pString(oAppDataSection.CustomLogoUrl, this.CustomLogoUrl);
 			this.RecoveryEmail = Types.pString(oAppDataSection.RecoveryEmail, this.RecoveryEmail);
 			this.RecoveryEmailConfirmed = Types.pBool(oAppDataSection.RecoveryEmailConfirmed, this.RecoveryEmailConfirmed);
+			this.RecoveryAccount = Types.pString(oAppDataSection.RecoveryAccount, this.RecoveryAccount);
 		}
 	},
 
-	update: function (sRecoveryEmail)
+	update: function (sRecoveryEmail, sRecoveryAccount)
 	{
 		this.RecoveryEmail = Types.pString(sRecoveryEmail, this.RecoveryEmail);
 		this.RecoveryEmailConfirmed = this.RecoveryEmail === '';
+		this.RecoveryAccount = Types.pString(sRecoveryAccount, this.RecoveryAccount);
 	}
 };

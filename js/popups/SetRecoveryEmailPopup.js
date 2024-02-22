@@ -98,7 +98,7 @@ CSetRecoveryEmailPopup.prototype.save = function ()
 CSetRecoveryEmailPopup.prototype.onUpdateSettingsResponse = function (oResponse, oRequest)
 {
 	this.loading(false);
-	if (Types.isString(oResponse.Result))
+	if (oResponse.Result)
 	{
 		if (_.isFunction(this.fCallback))
 		{

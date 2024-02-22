@@ -39,6 +39,7 @@ CSetRecoveryEmailPopup.prototype.PopupTemplate = '%ModuleName%_SetRecoveryEmailP
 
 CSetRecoveryEmailPopup.prototype.onOpen = function (fCallback)
 {
+	this.loading(false);
 	this.fillRecoveryEmailInfo();
 	this.updateMode(Types.isNonEmptyString(Settings.RecoveryEmail));
 	this.fCallback = fCallback;

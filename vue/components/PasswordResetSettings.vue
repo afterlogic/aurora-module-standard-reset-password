@@ -39,11 +39,13 @@
             <div class="col-5">
               <q-input outlined dense bg-color="white" v-model="notificationHost" />
             </div>
-            <div class="col-1 q-ma-sm text-right" v-t="'STANDARDRESETPASSWORD.LABEL_NOTIFICATION_PORT'" />
+          </div>
+          <div class="row q-mt-md" v-if="notificationType.value === 'smtp'">
+            <div class="col-2 q-mt-sm" v-t="'STANDARDRESETPASSWORD.LABEL_NOTIFICATION_PORT'" />
             <div class="col-1">
               <q-input outlined dense bg-color="white" v-model="notificationPort" />
             </div>
-            <div class="col-2 q-pb-md q-ml-sm">
+            <div class="col-2 q-ml-sm">
               <q-select
                 outlined
                 dense
@@ -55,7 +57,7 @@
               />
             </div>
           </div>
-          <div class="row q-mt-sm" v-if="notificationType.value === 'smtp'">
+          <div class="row q-mt-md" v-if="notificationType.value === 'smtp'">
             <div class="col-2 q-mt-sm">
               <q-checkbox dense v-model="notificationUseAuth">
                 <q-item-label>{{ $t('STANDARDRESETPASSWORD.LABEL_NOTIFICATION_USE_AUTH') }}</q-item-label>
@@ -114,6 +116,11 @@ import enums from '../enums'
 import settings from '../settings'
 
 const FAKE_PASS = '     '
+const SMTPSecurePortMap = {
+  noSecure: '25',
+  ssl: '465',
+  tls: '587',
+}
 
 export default {
   name: 'PasswordResetSettings',
@@ -156,19 +163,12 @@ export default {
       this.setInscription()
     },
 
-    notificationSMTPSecure() {
-      switch (this.notificationSMTPSecure) {
-        case this.SMTPSecureEnum.noSecure:
-          if (this.notificationPort === 465) {
-            this.notificationPort = 25
-          }
-          break
-        case this.SMTPSecureEnum.ssl:
-        case this.SMTPSecureEnum.tls:
-          if (this.notificationPort === 25) {
-            this.notificationPort = 465
-          }
-          break
+    notificationSMTPSecure(newValue, prevValue) {
+      const prevDefaultPort = SMTPSecurePortMap[Object.keys(this.SMTPSecureEnum).find(k => this.SMTPSecureEnum[k] === prevValue)]
+      const newPort = SMTPSecurePortMap[Object.keys(this.SMTPSecureEnum).find(k => this.SMTPSecureEnum[k] === newValue)]
+      
+      if (this.notificationPort == prevDefaultPort && newPort) {
+        this.notificationPort = newPort
       }
     },
   },

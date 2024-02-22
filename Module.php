@@ -155,7 +155,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         return [
             'Host' => $this->oModuleSettings->NotificationHost,
             'Port' => $this->oModuleSettings->NotificationPort,
-            'UseSsl' => !empty($this->oModuleSettings->SMTPSecure),
+            'UseSsl' => !empty($this->oModuleSettings->NotificationSMTPSecure),
             'SMTPAuth' => (bool) $this->oModuleSettings->NotificationUseAuth,
             'SMTPSecure' => $this->oModuleSettings->NotificationSMTPSecure,
             'Username' => $this->oModuleSettings->NotificationLogin,
@@ -261,6 +261,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
                 break;
         }
 
+        //$oMail->Timeout = 10; // seconds
         $oMail->setFrom($sFrom);
         $oMail->addAddress($sRecipientEmail);
         $oMail->addReplyTo($sFrom, $sSiteName);

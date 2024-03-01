@@ -425,14 +425,14 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         return $oAccount;
     }
 
-    private function getAccountById($iUserId, $iAccountId)
+    private function getAccountById($iUserId, $iAccountId, $sAccountType)
     {
         $oAccount = null;
 
         $aAccounts = \Aurora\Modules\Core\Module::Decorator()->GetUserAccounts($iUserId);
 
         foreach ($aAccounts as $oItem) {
-            if ($oItem['Id'] === $iAccountId && class_exists($oItem['Type'])) {
+            if ($oItem['Id'] === $iAccountId && $oItem['Type'] === $sAccountType && class_exists($oItem['Type'])) {
                 $oAccount = call_user_func_array([ $oItem['Type'], 'find'], [(int)$oItem['Id']]);
             }
         }
@@ -449,6 +449,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
      */
     public function GetSettings()
     {
+
         Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 
         $aSettings = [
@@ -460,9 +461,9 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oAuthenticatedUser = Api::getAuthenticatedUser();
         if ($oAuthenticatedUser instanceof User) {
             if ($oAuthenticatedUser->isNormalOrTenant()) {
-
                 $iRecoveryAccountId = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::RecoveryAccountId');
-                $oAccount = $this->getAccountById($oAuthenticatedUser->Id, $iRecoveryAccountId);
+                $sRecoveryAccountType = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::RecoveryAccountType');
+                $oAccount = $this->getAccountById($oAuthenticatedUser->Id, $iRecoveryAccountId, $sRecoveryAccountType);
 
                 $aSettings['RecoveryEmail'] = $this->getStarredRecoveryEmail($oAuthenticatedUser);
                 $aSettings['RecoveryEmailConfirmed'] = empty($oAuthenticatedUser->getExtendedProp(self::GetName() . '::ConfirmRecoveryEmailHash'));
@@ -511,12 +512,14 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             $sPrevRecoveryEmail = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::RecoveryEmail');
             $sPrevConfirmRecoveryEmail = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::ConfirmRecoveryEmail');
             $sPrevAccountId = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::RecoveryAccountId');
+            $sPrevAccountType = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::RecoveryAccountType');
 
             $sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oAuthenticatedUser->Id, 'confirm-recovery-email', __FUNCTION__) : '';
 
             $oAuthenticatedUser->setExtendedProp(self::GetName() . '::ConfirmRecoveryEmailHash', $sConfirmRecoveryEmailHash);
             $oAuthenticatedUser->setExtendedProp(self::GetName() . '::RecoveryEmail', $RecoveryEmail);
             $oAuthenticatedUser->setExtendedProp(self::GetName() . '::RecoveryAccountId', $oAccount->Id);
+            $oAuthenticatedUser->setExtendedProp(self::GetName() . '::RecoveryAccountType', $oAccount->getName());
 
             $bResult = \Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oAuthenticatedUser);
             if ($bResult) {
@@ -535,7 +538,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
                         $oAuthenticatedUser->setExtendedProps([
                             self::GetName() . '::ConfirmRecoveryEmailHash' => $sPrevConfirmRecoveryEmail,
                             self::GetName() . '::RecoveryEmail', $sPrevRecoveryEmail,
-                            self::GetName() . '::RecoveryAccountId', $sPrevAccountId
+                            self::GetName() . '::RecoveryAccountId', $sPrevAccountId,
+                            self::GetName() . '::RecoveryAccountType', $sPrevAccountType
                         ]);
                         \Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oAuthenticatedUser);
                     }
@@ -736,10 +740,11 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             $oUser = $this->getUserByHash($Hash, $this->getHashModuleName(), true);
             $oAccount = null;
 
-            if ($oUser && $oUser->getExtendedProp(self::GetName() . '::RecoveryAccountId')) {
+            if ($oUser) {
                 $iAccountId = $oUser->getExtendedProp(self::GetName() . '::RecoveryAccountId');
+                $sAccountType = $oUser->getExtendedProp(self::GetName() . '::RecoveryAccountType');
 
-                $oAccount = $this->getAccountById($oUser->Id, $iAccountId);
+                $oAccount = $this->getAccountById($oUser->Id, $iAccountId, $sAccountType);
             }
 
             if ($oUser && $oAccount) {
@@ -753,8 +758,6 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
                     'AccountPasswordChanged' => false
                 ];
 
-                // Api::GetModule('Core')->broadcastEvent(
-                // self::GetName() , '::ChangeAccountPassword',
                 $this->broadcastEvent('ChangeAccountPassword', $aArgs, $aResponse);
 
                 $mResult = $aResponse['AccountPasswordChanged'];

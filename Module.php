@@ -765,8 +765,8 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
                 if ($mResult) {
                     $oMin->DeleteMinByHash($Hash);
                     Api::UserSession()->DeleteAllUserSessions($oUser->Id);
-                    $oUser->TokensValidFromTimestamp = time();
-                    $oUser->save();
+
+                    \Aurora\Modules\Core\Module::Decorator()->UpdateTokensValidFromTimestamp($oUser);
                 }
             } else {
                 throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::InvalidInputParameter);

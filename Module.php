@@ -608,57 +608,6 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
     }
 
     /**
-     * @deprecated
-     */
-    // public function SetRecoveryEmail($UserPublicId = null, $RecoveryEmail = null, $SkipEmailConfirmation = false)
-    // {
-    //     Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::SuperAdmin);
-
-    //     if ($UserPublicId === null || $RecoveryEmail === null) {
-    //         throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::InvalidInputParameter);
-    //     }
-
-    //     $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
-
-    //     if ($oUser instanceof User && $oUser->isNormalOrTenant()) {
-    //         $sPrevRecoveryEmail = $oUser->getExtendedProp(self::GetName().'::RecoveryEmail');
-    //         $sPrevConfirmRecoveryEmail = $oUser->getExtendedProp(self::GetName().'::ConfirmRecoveryEmail');
-    //         $sConfirmRecoveryEmailHash = !empty($RecoveryEmail) ? $this->generateHash($oUser->Id, 'confirm-recovery-email', __FUNCTION__) : '';
-    //         $oUser->setExtendedProp(self::GetName().'::ConfirmRecoveryEmailHash', !$SkipEmailConfirmation ? !$sConfirmRecoveryEmailHash : '');
-    //         $oUser->setExtendedProp(self::GetName().'::RecoveryEmail', $RecoveryEmail);
-    //         if (\Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser)) {
-    //             $bResult = true;
-
-    //             if (!$SkipEmailConfirmation) {
-    //                 $oSentEx = null;
-    //                 try {
-    //                     // Send message to confirm recovery email if it's not empty.
-    //                     if (!empty($RecoveryEmail)) {
-    //                         $bResult = $this->sendRecoveryEmailConfirmationMessage($RecoveryEmail, $sConfirmRecoveryEmailHash);
-    //                     }
-    //                 } catch (\Exception $oEx) {
-    //                     $bResult = false;
-    //                     $oSentEx = $oEx;
-    //                 }
-    //                 if (!$bResult) {
-    //                     $oUser->setExtendedProp(self::GetName().'::ConfirmRecoveryEmailHash', $sPrevConfirmRecoveryEmail);
-    //                     $oUser->setExtendedProp(self::GetName().'::RecoveryEmail', $sPrevRecoveryEmail);
-    //                     \Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
-    //                 }
-    //                 if ($oSentEx !== null) {
-    //                     throw $oSentEx;
-    //                 }
-    //             }
-    //             return $bResult ? $this->getStarredRecoveryEmail($oUser) : false;
-    //         } else {
-    //             return false;
-    //         }
-    //     }
-
-    //     throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::AccessDenied);
-    // }
-
-    /**
      * Get recovery email address partly replaced with stars.
      * @param string $UserPublicId
      * @return string

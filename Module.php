@@ -699,8 +699,7 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             if ($oUser && $oAccount) {
                 $aArgs = [
                     'Account' => $oAccount,
-                    'CurrentPassword' => '',
-                    'SkipCurrentPasswordCheck' => true,
+                    'CurrentPassword' => $oAccount->getPassword(),
                     'NewPassword' => $NewPassword
                 ];
                 $aResponse = [

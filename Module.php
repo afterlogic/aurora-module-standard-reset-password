@@ -117,17 +117,17 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         ));
     }
 
-    protected function getMinId($iUserId, $sType, $sSalt = '')
+    protected function getMinId($iUserId, $sType, $sFunction = '')
     {
-        return \implode('|', array(self::GetName(), $iUserId, \md5($iUserId), $sType, $sSalt));
+        return \implode('|', array(self::GetName(), $iUserId, \md5($iUserId), $sType, $sFunction));
     }
 
-    protected function generateHash($iUserId, $sType, $sSalt = '')
+    protected function generateHash($iUserId, $sType, $sFunction = '')
     {
         $mHash = '';
         $oMin = \Aurora\Modules\Min\Module::Decorator();
         if ($oMin) {
-            $sMinId = $this->getMinId($iUserId, $sType, $sSalt);
+            $sMinId = $this->getMinId($iUserId, $sType, $sFunction);
             $mHash = $oMin->GetMinByID($sMinId);
 
             if ($mHash) {

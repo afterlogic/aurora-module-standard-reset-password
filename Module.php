@@ -11,6 +11,7 @@ use Aurora\System\Api;
 use Aurora\System\Application;
 use PHPMailer\PHPMailer\PHPMailer;
 use Aurora\Modules\Core\Models\User;
+use Aurora\System\Facades\Route;
 
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
@@ -44,7 +45,12 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             Enums\ErrorCodes::WrongPassword => $this->i18N('ERROR_WRONG_PASSWORD'),
         ];
 
-        $this->AddEntry('confirm-recovery-email', 'EntryConfirmRecoveryEmail');
+        Route::add(
+            $this,
+            [
+                'confirm-recovery-email' => 'EntryConfirmRecoveryEmail',
+            ]
+        );
     }
 
     /**

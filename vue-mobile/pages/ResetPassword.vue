@@ -1,5 +1,8 @@
 <template>
-  <LoginLayout :subheading="$t('STANDARDRESETPASSWORD.HEADING_RESET_PASSWORD')">
+  <LoginLayout
+    data-test-id="reset-password-page"
+    :subheading="$t('STANDARDRESETPASSWORD.HEADING_RESET_PASSWORD')"
+  >
     <div class="full-width q-my-auto">
       <!-- Step 0: change password via recovery hash -->
       <template v-if="step === 0">
@@ -70,6 +73,7 @@
       <template v-else-if="step === 1">
         <q-form>
           <q-input
+            data-test-id="reset-password-email"
             class="login_input"
             type="email"
             v-model="email"
@@ -126,6 +130,7 @@
       </template>
       <template v-else-if="step === 1">
         <AppButton
+          data-test-id="reset-password-continue"
           class="q-mb-md"
           :label="$t('STANDARDRESETPASSWORD.ACTION_CONTINUE')"
           :loading="gettingRecoveryEmail"
@@ -133,6 +138,7 @@
           @click="continueRecovery"
         />
         <AppButton
+          data-test-id="reset-password-back"
           :label="$t('STANDARDRESETPASSWORD.ACTION_BACK')"
           @click="backToLogin"
         />

@@ -32,7 +32,7 @@
               </template>
               <template v-slot:append>
                 <q-icon
-                  :name="isNewPasswordVisible ? 'visibility' : 'visibility_off'"
+                  :name="isNewPasswordVisible ? 'visibility_off' : 'visibility'"
                   color="grey-5"
                   class="cursor-pointer"
                   @click="isNewPasswordVisible = !isNewPasswordVisible"
@@ -52,7 +52,7 @@
               </template>
               <template v-slot:append>
                 <q-icon
-                  :name="isConfirmPasswordVisible ? 'visibility' : 'visibility_off'"
+                  :name="isConfirmPasswordVisible ? 'visibility_off' : 'visibility'"
                   color="grey-5"
                   class="cursor-pointer"
                   @click="isConfirmPasswordVisible = !isConfirmPasswordVisible"

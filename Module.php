@@ -175,10 +175,13 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($sEmail);
         if ($oUser instanceof User) {
             $bPrevState = \Aurora\Api::skipCheckUserRole(true);
-            if (class_exists('\Aurora\Modules\Mail\Module')) {
-                $oAccount = \Aurora\Modules\Mail\Module::Decorator()->GetAccountByEmail($sEmail, $oUser->Id);
+            try {
+                if (class_exists('\Aurora\Modules\Mail\Module')) {
+                    $oAccount = \Aurora\Modules\Mail\Module::Decorator()->GetAccountByEmail($sEmail, $oUser->Id);
+                }
+            } finally {
+                \Aurora\Api::skipCheckUserRole($bPrevState);
             }
-            \Aurora\Api::skipCheckUserRole($bPrevState);
         }
         return $oAccount;
     }
@@ -385,8 +388,11 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
             if ($bRecoveryLinkPrmament) {
                 $iUserId = $mHash['UserId'];
                 $bPrevState = \Aurora\Api::skipCheckUserRole(true);
-                $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUser($iUserId);
-                \Aurora\Api::skipCheckUserRole($bPrevState);
+                try {
+                    $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUser($iUserId);
+                } finally {
+                    \Aurora\Api::skipCheckUserRole($bPrevState);
+                }
             }
         }
         return $oUser;
@@ -644,10 +650,13 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
         $oUser = \Aurora\Modules\Core\Module::Decorator()->GetUserByPublicId($UserPublicId);
         if ($oUser instanceof User) {
             $bPrevState = \Aurora\Api::skipCheckUserRole(true);
-            $sPasswordResetHash = $this->generateHash($oUser->Id, $this->getHashModuleName(), __FUNCTION__);
-            $oUser->setExtendedProp(self::GetName() . '::PasswordResetHash', $sPasswordResetHash);
-            \Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
-            \Aurora\Api::skipCheckUserRole($bPrevState);
+            try {
+                $sPasswordResetHash = $this->generateHash($oUser->Id, $this->getHashModuleName(), __FUNCTION__);
+                $oUser->setExtendedProp(self::GetName() . '::PasswordResetHash', $sPasswordResetHash);
+                \Aurora\Modules\Core\Module::Decorator()->UpdateUserObject($oUser);
+            } finally {
+                \Aurora\Api::skipCheckUserRole($bPrevState);
+            }
 
             $sRecoveryEmail = $oUser->getExtendedProp(self::GetName() . '::RecoveryEmail');
             $sConfirmRecoveryEmailHash = $oUser->getExtendedProp(self::GetName() . '::ConfirmRecoveryEmailHash');
@@ -687,61 +696,62 @@ class Module extends \Aurora\System\Module\AbstractWebclientModule
     public function ChangePassword($Hash, $NewPassword)
     {
         $bPrevState =  Api::skipCheckUserRole(true);
+        try {
+            $oMin = \Aurora\Modules\Min\Module::Decorator();
+            $mResult = false;
 
-        $oMin = \Aurora\Modules\Min\Module::Decorator();
-        $mResult = false;
+            if ($oMin && !empty($Hash) && $NewPassword) {
+                $oUser = $this->getUserByHash($Hash, $this->getHashModuleName(), true);
+                $oAccount = null;
 
-        if ($oMin && !empty($Hash) && $NewPassword) {
-            $oUser = $this->getUserByHash($Hash, $this->getHashModuleName(), true);
-            $oAccount = null;
+                if ($oUser) {
+                    $iAccountId = $oUser->getExtendedProp(self::GetName() . '::RecoveryAccountId');
+                    $sAccountType = $oUser->getExtendedProp(self::GetName() . '::RecoveryAccountType');
 
-            if ($oUser) {
-                $iAccountId = $oUser->getExtendedProp(self::GetName() . '::RecoveryAccountId');
-                $sAccountType = $oUser->getExtendedProp(self::GetName() . '::RecoveryAccountType');
+                    $oAccount = $this->getAccountById($oUser->Id, $iAccountId, $sAccountType);
+                }
 
-                $oAccount = $this->getAccountById($oUser->Id, $iAccountId, $sAccountType);
-            }
+                if ($oUser && $oAccount) {
+                    $aArgs = [
+                        'Account' => $oAccount,
+                        'CurrentPassword' => $oAccount->getPassword(),
+                        'NewPassword' => $NewPassword
+                    ];
+                    $aResponse = [
+                        'AccountPasswordChanged' => false
+                    ];
 
-            if ($oUser && $oAccount) {
-                $aArgs = [
-                    'Account' => $oAccount,
-                    'CurrentPassword' => $oAccount->getPassword(),
-                    'NewPassword' => $NewPassword
-                ];
-                $aResponse = [
-                    'AccountPasswordChanged' => false
-                ];
+                    $this->broadcastEvent('ChangeAccountPassword', $aArgs, $aResponse);
 
-                $this->broadcastEvent('ChangeAccountPassword', $aArgs, $aResponse);
+                    $mResult = $aResponse['AccountPasswordChanged'];
 
-                $mResult = $aResponse['AccountPasswordChanged'];
+                    if ($mResult) {
+                        $oMin->DeleteMinByHash($Hash);
+                        Api::UserSession()->DeleteAllAccountSessions($oAccount);
 
-                if ($mResult) {
-                    $oMin->DeleteMinByHash($Hash);
-                    Api::UserSession()->DeleteAllAccountSessions($oAccount);
+                        // removing AuthToken cookie for web client
+                        $sXClientHeader = $this->oHttp->GetHeader('X-Client');
 
-                    // removing AuthToken cookie for web client
-                    $sXClientHeader = $this->oHttp->GetHeader('X-Client');
+                        // Set cookie in browser only
+                        if (strtolower($sXClientHeader) === 'webclient') {
+                            $authUserId = \Aurora\System\Api::getAuthenticatedUserId();
+                            if ($authUserId === $oAccount->IdUser) {
+                                // we need to remove auth token cookie, because it is no longer valid
+                                // user will be logged out and should login with new password
 
-                    // Set cookie in browser only
-                    if (strtolower($sXClientHeader) === 'webclient') {
-                        $authUserId = \Aurora\System\Api::getAuthenticatedUserId();
-                        if ($authUserId === $oAccount->IdUser) {
-                            // we need to remove auth token cookie, because it is no longer valid
-                            // user will be logged out and should login with new password
-
-                            Api::unsetAuthTokenCookie();
+                                Api::unsetAuthTokenCookie();
+                            }
                         }
                     }
+                } else {
+                    throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::InvalidInputParameter);
                 }
             } else {
                 throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::InvalidInputParameter);
             }
-        } else {
-            throw new \Aurora\System\Exceptions\ApiException(\Aurora\System\Notifications::InvalidInputParameter);
+        } finally {
+            Api::skipCheckUserRole($bPrevState);
         }
-
-        Api::skipCheckUserRole($bPrevState);
 
         return $mResult;
     }
